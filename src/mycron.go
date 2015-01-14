@@ -1,17 +1,52 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/robfig/cron"
 	"os/exec"
 	"time"
 )
 
+type job struct {
+	ID              int
+	Name, Time, Cmd string
+}
+
+func getCronList() (jobss []job, e error) {
+	db, err := sql.Open("mysql", "root:@/mycron")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer db.Close()
+	rows, err := db.Query("SELECT * FROM cron")
+	if err != nil {
+		panic(err.Error())
+	}
+	columns, err := rows.Columns()
+	if err != nil {
+		panic(err.Error())
+	}
+	values := make([]sql.RawBytes, len(columns))
+	jobs := make([]job, len(values))
+	i := 0
+	// Fetch rows
+	for rows.Next() {
+		err = rows.Scan(&jobs[i].ID, &jobs[i].Name, &jobs[i].Time, &jobs[i].Cmd)
+		if err != nil {
+			panic(err.Error())
+		}
+		i++
+	}
+	if err = rows.Err(); err != nil {
+		panic(err.Error())
+	}
+	return jobs, nil
+}
+
 const ONE_SECOND = 1*time.Second + 10*time.Millisecond
 
-//exec another process
-//if wait d Duration, it will kill the process
-//d is <= 0, wait forever
 func ExecTimeout(d time.Duration, name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	if err := cmd.Start(); err != nil {
@@ -38,26 +73,21 @@ func ExecTimeout(d time.Duration, name string, args ...string) error {
 }
 
 func main() {
+	jobs, _ := getCronList()
 	globalchan := make(chan bool)
 	c := cron.New()
 	defer func() {
 		c.Stop()
 		close(globalchan)
 	}()
-	c.AddFunc("* * * * * ?",
-		func() {
-			fmt.Println("1s")
-		})
-	c.AddFunc("*/2 * * * * ?",
-		func() {
-			fmt.Println("2s")
-		})
-	c.Start()
 
-	time.Sleep(3 * time.Second)
-	c.AddFunc("*/3 * * * * ?",
-		func() {
-			fmt.Println("3s")
-		})
+	for i := 0; i < len(jobs); i++ {
+		job := jobs[i]
+		c.AddFunc(job.Time,
+			func() {
+				fmt.Println(job.Name, job.Cmd)
+			})
+	}
+	c.Start()
 	<-globalchan
 }
