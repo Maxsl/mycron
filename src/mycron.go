@@ -25,6 +25,11 @@ func main() {
 				fmt.Println(job.Name, job.Cmd)
 			})
 	}
+	
+/*	for _,e := range c.Entries() {
+		fmt.Printf("#v",*e)
+	}*/
+
 	c.Start()
 	<-globalchan
 }
