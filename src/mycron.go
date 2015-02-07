@@ -5,6 +5,7 @@ import (
 	"cron"
 	"mydb"
 	"time"
+	"myexec"
 )
 
 const ONE_SECOND = 1*time.Second + 10*time.Millisecond
@@ -22,7 +23,11 @@ func main() {
 		job := jobs[i]
 		c.AddFunc(job.Time,
 			func() {
-				fmt.Println(job.Name, job.Cmd)
+				//fmt.Println(job.Name, job.Cmd)
+				e := myexec.ExecTimeout(time.Second * 10,"/bin/sh", "-c", `ps -ef | grep -v "grep" | grep "php" >> /home/wida/test.txt`)
+				if e != nil{
+					fmt.Print(e)
+				}
 			})
 	}
 	

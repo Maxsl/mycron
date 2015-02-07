@@ -51,6 +51,11 @@ type Entry struct {
 // (with zero time at the end).
 type byTime []*Entry
 
+
+/*
+ *sort.sort 函数接口
+ *Sort排序data。它调用1次data.Len确定长度，调用O(n*log(n))次data.Less和data.Swap。本函数不能保证排序的稳定性（即不保证相等元素的相对次序不变）
+*/
 func (s byTime) Len() int      { return len(s) }
 func (s byTime) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 func (s byTime) Less(i, j int) bool {
@@ -130,16 +135,16 @@ func (c *Cron) Start() {
 // Run the scheduler.. this is private just due to the need to synchronize
 // access to the 'running' state variable.
 func (c *Cron) run() {
-	// Figure out the next activation times for each entry.
+	//计算出每个条目下的激活时间
 	now := time.Now().Local()
 	for _, entry := range c.entries {
 		entry.Next = entry.Schedule.Next(now)
 	}
 
 	for {
-		// Determine the next entry to run.
+		// Determine the next entry to run.确定下一个条目进入运行。
 		sort.Sort(byTime(c.entries))
-
+		//println("ddd");
 		var effective time.Time
 		if len(c.entries) == 0 || c.entries[0].Next.IsZero() {
 			// If there are no entries yet, just sleep - it still handles new entries

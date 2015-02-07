@@ -1,7 +1,7 @@
 package myexec
 
 import (
-	//"fmt"
+	"fmt"
 	"os/exec"
 	"time"
 )
@@ -19,7 +19,7 @@ func ExecTimeout(d time.Duration, name string, args ...string) error {
 	go func() {
 		done <- cmd.Wait()
 	}()
-	//fmt.Println(cmd.Process.Pid)
+	fmt.Println(cmd.Process.Pid)
 	select {
 	case <-time.After(d):
 		cmd.Process.Kill()
