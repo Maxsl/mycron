@@ -57,9 +57,11 @@ func getField(field string, r bounds) uint64 {
 	// list = range {"," range}
 	var bits uint64
 	ranges := strings.FieldsFunc(field, func(r rune) bool { return r == ',' })
+	//fmt.Println(ranges)
 	for _, expr := range ranges {
 		bits |= getRange(expr, r)
 	}
+	//fmt.Println(bits)
 	return bits
 }
 

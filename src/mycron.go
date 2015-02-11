@@ -24,17 +24,12 @@ func main() {
 		c.AddFunc(job.Time,
 			func() {
 				//fmt.Println(job.Name, job.Cmd)
-				e := myexec.ExecTimeout(time.Second * 10,"/bin/sh", "-c", `ps -ef | grep -v "grep" | grep "php" >> /home/wida/test.txt`)
-				if e != nil{
+				e := myexec.ExecTimeout(time.Second*10, "/bin/sh", "-c", `ps -ef | grep -v "grep" | grep "php" >> /home/wida/test.txt`)
+				if e != nil {
 					fmt.Print(e)
 				}
 			})
 	}
-	
-/*	for _,e := range c.Entries() {
-		fmt.Printf("#v",*e)
-	}*/
-
 	c.Start()
 	<-globalchan
 }

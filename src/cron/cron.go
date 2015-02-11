@@ -5,6 +5,7 @@ package cron
 import (
 	"sort"
 	"time"
+	//"fmt"
 )
 
 // Cron keeps track of any number of entries, invoking the associated func as
@@ -95,6 +96,7 @@ func (c *Cron) AddFunc(spec string, cmd func()) error {
 // AddFunc adds a Job to the Cron to be run on the given schedule.
 func (c *Cron) AddJob(spec string, cmd Job) error {
 	schedule, err := Parse(spec)
+	//fmt.Printf("%v",schedule)
 	if err != nil {
 		return err
 	}

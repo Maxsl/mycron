@@ -1,6 +1,9 @@
 package cron
 
-import "time"
+import (
+	"time"
+	"fmt"
+)
 
 // SpecSchedule specifies a duty cycle (to the second granularity), based on a
 // traditional crontab specification. It is computed initially and stored as bit sets.
@@ -52,6 +55,7 @@ const (
 
 // Next returns the next time this schedule is activated, greater than the given
 // time.  If no time can be found to satisfy the schedule, return the zero time.
+//接下来返回下次此激活计划，大于给定时间。如果没有时间可以满足进度，归零时间。
 func (s *SpecSchedule) Next(t time.Time) time.Time {
 	// General approach:
 	// For Month, Day, Hour, Minute, Second:
@@ -62,9 +66,17 @@ func (s *SpecSchedule) Next(t time.Time) time.Time {
 	// values)
 
 	// Start at the earliest possible time (the upcoming second).
+	//的一般方法：
+	//月，日，小时，分钟，秒：
+	//检查时间值匹配。如果是，继续下一栏位。
+	//如果字段不匹配的时间表，然后增加直到它匹配。
+	//而增加的栏位，重新回到起点的字段列表（因为要重新验证先前的栏位值）
+
+	//开始在尽可能早的时间（即将到来的下一秒）
 	t = t.Add(1*time.Second - time.Duration(t.Nanosecond())*time.Nanosecond)
 
 	// This flag indicates whether a field has been incremented.
+	//该标志指示栏位是否已经被增加。
 	added := false
 
 	// If no time is found within five years, return zero.
@@ -156,4 +168,9 @@ func dayMatches(s *SpecSchedule, t time.Time) bool {
 		return domMatch && dowMatch
 	}
 	return domMatch || dowMatch
+}
+
+
+func (s SpecSchedule) String() string{
+	return fmt.Sprintf("SpecSchedule[%d,%d,%d,%d,%d,%d]",s.Second,s.Minute,s.Hour,s.Dom,s.Month,s.Dow)
 }
