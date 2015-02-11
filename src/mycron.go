@@ -30,6 +30,14 @@ func main() {
 				}
 			})
 	}
+
+	for _,e:=  range c.Entries(){
+		fmt.Printf("#%v",e.Next)
+		fmt.Printf("#%v",e.Prev)
+		fmt.Printf("#%v",e.Schedule)
+		//fmt.Printf()
+	}
+
 	c.Start()
 	<-globalchan
 }

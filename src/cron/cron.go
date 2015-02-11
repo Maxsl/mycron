@@ -6,6 +6,7 @@ import (
 	"sort"
 	"time"
 	//"fmt"
+	"fmt"
 )
 
 // Cron keeps track of any number of entries, invoking the associated func as
@@ -141,7 +142,10 @@ func (c *Cron) run() {
 	now := time.Now().Local()
 	for _, entry := range c.entries {
 		entry.Next = entry.Schedule.Next(now)
+		//fmt.Println(entry.Next)
 	}
+
+
 
 	for {
 		// Determine the next entry to run.确定下一个条目进入运行。

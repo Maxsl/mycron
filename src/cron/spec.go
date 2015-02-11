@@ -68,8 +68,7 @@ func (s *SpecSchedule) Next(t time.Time) time.Time {
 	// Start at the earliest possible time (the upcoming second).
 	//的一般方法：
 	//月，日，小时，分钟，秒：
-	//检查时间值匹配。如果是，继续下一栏位。
-	//如果字段不匹配的时间表，然后增加直到它匹配。
+	//检查时间值匹配。如果是，继续下一栏位。如果不是，然后增加直到它匹配。
 	//而增加的栏位，重新回到起点的字段列表（因为要重新验证先前的栏位值）
 
 	//开始在尽可能早的时间（即将到来的下一秒）
@@ -94,6 +93,7 @@ WRAP:
 		if !added {
 			added = true
 			// Otherwise, set the date at the beginning (since the current time is irrelevant).
+			//否则，设置日期开始
 			t = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
 		}
 		t = t.AddDate(0, 1, 0)
@@ -172,5 +172,5 @@ func dayMatches(s *SpecSchedule, t time.Time) bool {
 
 
 func (s SpecSchedule) String() string{
-	return fmt.Sprintf("SpecSchedule[%d,%d,%d,%d,%d,%d]",s.Second,s.Minute,s.Hour,s.Dom,s.Month,s.Dow)
+	return fmt.Sprintf("SpecSchedule[%b,%b,%b,%b,%b,%b]",s.Second,s.Minute,s.Hour,s.Dom,s.Month,s.Dow)
 }
