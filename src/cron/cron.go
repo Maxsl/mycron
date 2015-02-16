@@ -5,8 +5,6 @@ package cron
 import (
 	"sort"
 	"time"
-	//"fmt"
-	"fmt"
 )
 
 // Cron keeps track of any number of entries, invoking the associated func as

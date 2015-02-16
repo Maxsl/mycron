@@ -88,6 +88,7 @@ WRAP:
 
 	// Find the first applicable month.
 	// If it's this month, then do nothing.
+	//一直匹配到任务的最近月份
 	for 1<<uint(t.Month())&s.Month == 0 {
 		// If we have to add a month, reset the other parts to 0.
 		if !added {
@@ -105,6 +106,7 @@ WRAP:
 	}
 
 	// Now get a day in that month.
+	//匹配任务的最近日期和星期
 	for !dayMatches(s, t) {
 		if !added {
 			added = true
@@ -117,6 +119,7 @@ WRAP:
 		}
 	}
 
+	//匹配到任务的最近小时
 	for 1<<uint(t.Hour())&s.Hour == 0 {
 		if !added {
 			added = true
@@ -128,7 +131,7 @@ WRAP:
 			goto WRAP
 		}
 	}
-
+	//匹配到任务的最近分钟
 	for 1<<uint(t.Minute())&s.Minute == 0 {
 		if !added {
 			added = true
@@ -140,7 +143,7 @@ WRAP:
 			goto WRAP
 		}
 	}
-
+	//匹配到任务的最近秒
 	for 1<<uint(t.Second())&s.Second == 0 {
 		if !added {
 			added = true
