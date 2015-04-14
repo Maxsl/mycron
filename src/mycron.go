@@ -24,24 +24,15 @@ func main() {
 		job := jobs[i]
 		c.AddFunc(job.Time,
 			func() {
-				//fmt.Println(job.Name, job.Cmd)
-			//	e := myexec.ExecTimeout(time.Second*10, os.Getenv("SHELL"), "-c", `ps -ef | grep -v "grep" | grep "php" >> /home/wida/test.txt`)
-				//e := myexec.ExecTimeout(time.Second*10, os.Getenv("SHELL"), "-c", "/home/wida/sh.sh")
-				s,e := myexec.ExecWithTimeout(time.Second*10,"/home/wida/sh.sh");
+				job.ChangeRunningStatu(1)
+				s,e := myexec.ExecWithTimeout(time.Second*10,job.Cmd);
 				if e != nil {
 					fmt.Print(e)
 				}
+				job.ChangeRunningStatu(0)
 				fmt.Println(s);
-			})
+			},job.STime,job.ETime)
 	}
-
-//	for _,e:=  range c.Entries(){
-//		fmt.Printf("#%v",e.Next)
-//		fmt.Printf("#%v",e.Prev)
-//		fmt.Printf("#%v",e.Schedule)
-//		//fmt.Printf()
-//	}
-
 	c.Start()
 	<-globalchan
 }

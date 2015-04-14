@@ -10,14 +10,15 @@ import (
 )
 
 func ExecWithTimeout(d time.Duration, line string)(string, error) {
-	//cmd := exec.Command(name, args...)
 	shell := os.Getenv("SHELL")
 	cmd := exec.Command(shell, "-c", line)
 	if err := cmd.Start(); err != nil {
 		return "" , err
 	}
 	if d <= 0 {
-		return "",cmd.Wait()
+		cmd.Wait()
+		b, err := exec.Command(shell, "-c", line).Output()
+		return strings.TrimSpace(string(b)),err
 	}
 
 	done := make(chan error)
@@ -28,12 +29,13 @@ func ExecWithTimeout(d time.Duration, line string)(string, error) {
 	select {
 	case <-time.After(d):
 		cmd.Process.Kill()
-		//wait goroutine return
-		//fmt.Println(cmd.Process.Pid)
-		return "time out ",<-done
-	case <-done:
-		b, _ := exec.Command(shell, "-c", line).Output()
-		return strings.TrimSpace(string(b)),nil
+		return "",errors.New("time out")
+	case  err :=<-done:
+		if err !=nil{
+			return "",err
+		}
+		b, err := exec.Command(shell, "-c", line).Output()
+		return strings.TrimSpace(string(b)),err
 	}
 }
 

@@ -43,6 +43,12 @@ type Entry struct {
 	// been run.
 	Prev time.Time
 
+	//开始时间和结束时间
+	Start ,Ending int
+	//任务状态  0的时候表示任务停止
+	Status int
+	//任务ID
+	ID  int
 	// The Job to run.
 	Job Job
 }
@@ -88,26 +94,28 @@ type FuncJob func()
 func (f FuncJob) Run() { f() }
 
 // AddFunc adds a func to the Cron to be run on the given schedule.
-func (c *Cron) AddFunc(spec string, cmd func()) error {
-	return c.AddJob(spec, FuncJob(cmd))
+func (c *Cron) AddFunc(spec string, cmd func(),stime,etime int) error {
+	return c.AddJob(spec, FuncJob(cmd),stime,etime)
 }
 
 // AddFunc adds a Job to the Cron to be run on the given schedule.
-func (c *Cron) AddJob(spec string, cmd Job) error {
+func (c *Cron) AddJob(spec string, cmd Job,stime, etime int) error {
 	schedule, err := Parse(spec)
 	//fmt.Printf("%v",schedule)
 	if err != nil {
 		return err
 	}
-	c.Schedule(schedule, cmd)
+	c.Schedule(schedule, cmd,stime,etime)
 	return nil
 }
 
 // Schedule adds a Job to the Cron to be run on the given schedule.
-func (c *Cron) Schedule(schedule Schedule, cmd Job) {
+func (c *Cron) Schedule(schedule Schedule, cmd Job,stime, etime int) {
 	entry := &Entry{
 		Schedule: schedule,
 		Job:      cmd,
+		Start:   stime,
+		Ending: etime,
 	}
 	if !c.running {
 		c.entries = append(c.entries, entry)
