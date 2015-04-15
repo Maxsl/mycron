@@ -154,9 +154,17 @@ func (c *Cron) run() {
 
 
 	for {
+		//删除过期和任务状态的不在线的任务
+		for k,e:=range c.entries{
+			t := time.Now().Unix()
+			if e.Status ==0 || e.Start > t || e.Ending < t {
+				c.entries =  append(c.entries[:k], c.entries[k+1:]...)
+			}
+		}
+
 		// Determine the next entry to run.确定下一个条目进入运行。
 		sort.Sort(byTime(c.entries))
-		//println("ddd");
+		
 		var effective time.Time
 		if len(c.entries) == 0 || c.entries[0].Next.IsZero() {
 			// If there are no entries yet, just sleep - it still handles new entries
