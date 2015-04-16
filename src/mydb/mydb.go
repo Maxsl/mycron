@@ -57,6 +57,49 @@ func GetCronList() (jobss []Job, e error) {
 	return jobs, nil
 }
 
+
+func GetModifyList()(jobss []Job, e error){
+	ut := int64(time.Now().Unix())
+	rows, err := db.Query("SELECT * FROM cron where status = 1 and sTime < ? and eTime > ? and modify = 1", ut, ut)
+	if err != nil {
+		panic(err.Error())
+	}
+	columns, err := rows.Columns()
+	if err != nil {
+		panic(err.Error())
+	}
+	values := make([]sql.RawBytes, len(columns))
+	jobs := make([]Job, len(values))
+	i := 0
+	// Fetch rows
+	for rows.Next() {
+		err = rows.Scan(&jobs[i].ID, &jobs[i].Name, &jobs[i].Time, &jobs[i].Cmd, &jobs[i].STime, &jobs[i].ETime, &jobs[i].Status, &jobs[i].Running)
+		if err != nil {
+			panic(err.Error())
+		}
+		i++
+	}
+	if err = rows.Err(); err != nil {
+		panic(err.Error())
+	}
+	return jobs, nil
+}
+
+func UpdateModifyList(){
+	ut := int64(time.Now().Unix())
+	stmtIns, err := db.Prepare("update cron set modify = 0 where status = 1 and sTime < ? and eTime > ? ")
+	if err != nil {
+		panic(err.Error())
+	}
+	defer stmtIns.Close()
+
+	result, err := stmtIns.Exec(ut, ut)
+	if err != nil {
+		panic(err.Error())
+	}
+	return result.RowsAffected()
+}
+
 func (job Job) ChangeRunningStatu(status int) (int64, error) {
 	stmtIns, err := db.Prepare("update cron set isrunning = ? where id = ?")
 	if err != nil {
