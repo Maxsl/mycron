@@ -44,11 +44,11 @@ type Entry struct {
 	Prev time.Time
 
 	//开始时间和结束时间
-	Start ,Ending int
+	Start, Ending int64
 	//任务状态  0的时候表示任务停止
 	Status int
 	//任务ID
-	ID  int
+	ID int
 	// The Job to run.
 	Job Job
 }
@@ -57,11 +57,10 @@ type Entry struct {
 // (with zero time at the end).
 type byTime []*Entry
 
-
 /*
  *sort.sort 函数接口
  *Sort排序data。它调用1次data.Len确定长度，调用O(n*log(n))次data.Less和data.Swap。本函数不能保证排序的稳定性（即不保证相等元素的相对次序不变）
-*/
+ */
 func (s byTime) Len() int      { return len(s) }
 func (s byTime) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 func (s byTime) Less(i, j int) bool {
@@ -94,28 +93,27 @@ type FuncJob func()
 func (f FuncJob) Run() { f() }
 
 // AddFunc adds a func to the Cron to be run on the given schedule.
-func (c *Cron) AddFunc(spec string, cmd func(),stime,etime int) error {
-	return c.AddJob(spec, FuncJob(cmd),stime,etime)
+func (c *Cron) AddFunc(spec string, cmd func(), stime, etime int64) error {
+	return c.AddJob(spec, FuncJob(cmd), stime, etime)
 }
 
 // AddFunc adds a Job to the Cron to be run on the given schedule.
-func (c *Cron) AddJob(spec string, cmd Job,stime, etime int) error {
+func (c *Cron) AddJob(spec string, cmd Job, stime, etime int64) error {
 	schedule, err := Parse(spec)
-	//fmt.Printf("%v",schedule)
 	if err != nil {
 		return err
 	}
-	c.Schedule(schedule, cmd,stime,etime)
+	c.Schedule(schedule, cmd, stime, etime)
 	return nil
 }
 
 // Schedule adds a Job to the Cron to be run on the given schedule.
-func (c *Cron) Schedule(schedule Schedule, cmd Job,stime, etime int) {
+func (c *Cron) Schedule(schedule Schedule, cmd Job, stime, etime int64) {
 	entry := &Entry{
 		Schedule: schedule,
 		Job:      cmd,
-		Start:   stime,
-		Ending: etime,
+		Start:    stime,
+		Ending:   etime,
 	}
 	if !c.running {
 		c.entries = append(c.entries, entry)
@@ -151,20 +149,18 @@ func (c *Cron) run() {
 		//fmt.Println(entry.Next)
 	}
 
-
-
 	for {
 		//删除过期和任务状态的不在线的任务
-		for k,e:=range c.entries{
+		for k, e := range c.entries {
 			t := time.Now().Unix()
-			if e.Status ==0 || e.Start > t || e.Ending < t {
-				c.entries =  append(c.entries[:k], c.entries[k+1:]...)
+			if e.Status == 0 || e.Start > t || e.Ending < t {
+				c.entries = append(c.entries[:k], c.entries[k+1:]...)
 			}
 		}
 
 		// Determine the next entry to run.确定下一个条目进入运行。
 		sort.Sort(byTime(c.entries))
-		
+
 		var effective time.Time
 		if len(c.entries) == 0 || c.entries[0].Next.IsZero() {
 			// If there are no entries yet, just sleep - it still handles new entries
@@ -188,8 +184,19 @@ func (c *Cron) run() {
 			continue
 
 		case newEntry := <-c.add:
-			c.entries = append(c.entries, newEntry)
-			newEntry.Next = newEntry.Schedule.Next(now)
+			//如果存在就更新，不存在就添加
+			var key int = -1
+			for k, e := range c.entries {
+				if e.ID == newEntry.ID {
+					key = k
+				}
+			}
+			if key < 0 {
+				c.entries = append(c.entries, newEntry)
+			} else {
+				newEntry.Next = newEntry.Schedule.Next(now)
+				c.entries[key] = newEntry
+			}
 
 		case <-c.snapshot:
 			c.snapshot <- c.entrySnapshot()
