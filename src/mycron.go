@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"cron"
-	"mydb"
+	"git.oschina.net/wida/mycron/src/cron"
+	"git.oschina.net/wida/mycron/src/mydb"
+	"git.oschina.net/wida/mycron/src/myexec"
 	"time"
-	"myexec"
-	//"os"
 )
 
 const ONE_SECOND = 1*time.Second + 10*time.Millisecond
@@ -25,13 +24,13 @@ func main() {
 		c.AddFunc(job.Time,
 			func() {
 				job.ChangeRunningStatu(1)
-				s,e := myexec.ExecWithTimeout(time.Second*10,job.Cmd);
+				s, e := myexec.ExecWithTimeout(time.Second*10, job.Cmd)
 				if e != nil {
 					fmt.Print(e)
 				}
 				job.ChangeRunningStatu(0)
-				fmt.Println(s);
-			},job.STime,job.ETime)
+				fmt.Println(s)
+			}, int64(job.STime), int64(job.ETime))
 	}
 	c.Start()
 	<-globalchan

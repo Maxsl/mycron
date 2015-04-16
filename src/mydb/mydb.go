@@ -2,6 +2,7 @@ package mydb
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"time"
 )
@@ -15,11 +16,12 @@ type Job struct {
 }
 
 var (
-	db *sql.DB
+	db  *sql.DB
+	err error
 )
 
 func init() {
-	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8", "root", "", "127.0.0.1", 3306, "mycron"))
+	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8", "root", "wida", "127.0.0.1", 3306, "mycron"))
 	if err != nil {
 		panic(err.Error())
 	}
