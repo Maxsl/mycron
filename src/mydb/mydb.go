@@ -13,6 +13,7 @@ type Job struct {
 	STime, ETime    int
 	Status          uint8
 	Running         uint8
+	IsModify        uint8
 }
 
 var (
@@ -45,7 +46,7 @@ func GetCronList() (jobss []Job, e error) {
 	i := 0
 	// Fetch rows
 	for rows.Next() {
-		err = rows.Scan(&jobs[i].ID, &jobs[i].Name, &jobs[i].Time, &jobs[i].Cmd, &jobs[i].STime, &jobs[i].ETime, &jobs[i].Status, &jobs[i].Running)
+		err = rows.Scan(&jobs[i].ID, &jobs[i].Name, &jobs[i].Time, &jobs[i].Cmd, &jobs[i].STime, &jobs[i].ETime, &jobs[i].Status, &jobs[i].Running,&jobs[i].IsModify)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -60,7 +61,7 @@ func GetCronList() (jobss []Job, e error) {
 
 func GetModifyList()(jobss []Job, e error){
 	ut := int64(time.Now().Unix())
-	rows, err := db.Query("SELECT * FROM cron where status = 1 and sTime < ? and eTime > ? and modify = 1", ut, ut)
+	rows, err := db.Query("SELECT * FROM cron where sTime < ? and eTime > ? and modify = 1", ut, ut)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -73,7 +74,7 @@ func GetModifyList()(jobss []Job, e error){
 	i := 0
 	// Fetch rows
 	for rows.Next() {
-		err = rows.Scan(&jobs[i].ID, &jobs[i].Name, &jobs[i].Time, &jobs[i].Cmd, &jobs[i].STime, &jobs[i].ETime, &jobs[i].Status, &jobs[i].Running)
+		err = rows.Scan(&jobs[i].ID, &jobs[i].Name, &jobs[i].Time, &jobs[i].Cmd, &jobs[i].STime, &jobs[i].ETime, &jobs[i].Status, &jobs[i].Running,&jobs[i].IsModify)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -85,9 +86,9 @@ func GetModifyList()(jobss []Job, e error){
 	return jobs, nil
 }
 
-func UpdateModifyList(){
+func UpdateModifyList() (int64, error){
 	ut := int64(time.Now().Unix())
-	stmtIns, err := db.Prepare("update cron set modify = 0 where status = 1 and sTime < ? and eTime > ? ")
+	stmtIns, err := db.Prepare("update cron set modify = 0 where sTime < ? and eTime > ? ")
 	if err != nil {
 		panic(err.Error())
 	}

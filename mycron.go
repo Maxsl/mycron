@@ -12,11 +12,9 @@ const ONE_SECOND = 1*time.Second + 10*time.Millisecond
 
 func main() {
 	jobs, _ := mydb.GetCronList()
-	globalchan := make(chan bool)
 	c := cron.New()
 	defer func() {
 		c.Stop()
-		close(globalchan)
 	}()
 
 	for i := 0; i < len(jobs); i++ {
@@ -32,17 +30,15 @@ func main() {
 				fmt.Println(s)
 			},int(job.Status),int(job.ID), int64(job.STime), int64(job.ETime))
 	}
-
 /*	for _,v := range c.Entries(){
 		fmt.Println(v.ID,v.Status,v.Start,v.Ending)
 	}*/
 	c.Start()
-
 	for {
-		now := time.Now().Local()
+		//printfEntry(c);
 		select {
-		case now = <-time.After(time.Second * 60):
-			jobs, _ := myexec.GetModifyList()
+		case <-time.After(time.Second):
+			jobs, _ := mydb.GetModifyList()
 			for i := 0; i < len(jobs); i++ {
 				job := jobs[i]
 				c.AddFunc(job.Time,
@@ -56,10 +52,15 @@ func main() {
 						fmt.Println(s)
 					},int(job.Status),int(job.ID), int64(job.STime), int64(job.ETime))
 			}
-			myexec.UpdateModifyList()
+			mydb.UpdateModifyList()
 			continue
 		}
 	}
+}
 
-	<-globalchan
+
+func printfEntry(c *cron.Cron){
+	for _,v := range c.Entries(){
+		fmt.Println(v.ID,v.Status,v.Start,v.Ending)
+	}
 }
