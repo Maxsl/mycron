@@ -14,6 +14,8 @@ type Job struct {
 	Status          uint8
 	Running         uint8
 	IsModify        uint8
+	Process         uint8
+	Ip              string
 }
 
 var (
@@ -46,7 +48,8 @@ func GetCronList() (jobss []Job, e error) {
 	i := 0
 	// Fetch rows
 	for rows.Next() {
-		err = rows.Scan(&jobs[i].ID, &jobs[i].Name, &jobs[i].Time, &jobs[i].Cmd, &jobs[i].STime, &jobs[i].ETime, &jobs[i].Status, &jobs[i].Running,&jobs[i].IsModify)
+		err = rows.Scan(&jobs[i].ID, &jobs[i].Name, &jobs[i].Time, &jobs[i].Cmd, &jobs[i].STime, &jobs[i].ETime,
+			&jobs[i].Status, &jobs[i].Running,&jobs[i].IsModify,&jobs[i].Process,&jobs[i].Ip)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -74,7 +77,8 @@ func GetModifyList()(jobss []Job, e error){
 	i := 0
 	// Fetch rows
 	for rows.Next() {
-		err = rows.Scan(&jobs[i].ID, &jobs[i].Name, &jobs[i].Time, &jobs[i].Cmd, &jobs[i].STime, &jobs[i].ETime, &jobs[i].Status, &jobs[i].Running,&jobs[i].IsModify)
+		err = rows.Scan(&jobs[i].ID, &jobs[i].Name, &jobs[i].Time, &jobs[i].Cmd, &jobs[i].STime,
+					&jobs[i].ETime, &jobs[i].Status, &jobs[i].Running,&jobs[i].IsModify,&jobs[i].Process,&jobs[i].Ip)
 		if err != nil {
 			panic(err.Error())
 		}
