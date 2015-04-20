@@ -35,7 +35,7 @@ func init() {
 
 func GetCronList() (jobss []Job, e error) {
 	ut := int64(time.Now().Unix())
-	rows, err := db.Query("SELECT * FROM cron where status = 1 and sTime < ? and eTime > ?", ut, ut)
+	rows, err := db.Query("SELECT id,name,time,cmd,sTime,eTime,status,isrunning,modify,process,ip FROM cron where status = 1 and sTime < ? and eTime > ?", ut, ut)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -64,7 +64,7 @@ func GetCronList() (jobss []Job, e error) {
 
 func GetModifyList()(jobss []Job, e error){
 	ut := int64(time.Now().Unix())
-	rows, err := db.Query("SELECT * FROM cron where sTime < ? and eTime > ? and modify = 1", ut, ut)
+	rows, err := db.Query("SELECT id,name,time,cmd,sTime,eTime,status,isrunning,modify,process,ip FROM cron where sTime < ? and eTime > ? and modify = 1", ut, ut)
 	if err != nil {
 		panic(err.Error())
 	}
