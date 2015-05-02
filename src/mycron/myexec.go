@@ -1,4 +1,4 @@
-package myexec
+package mycron
 
 import (
 	//"fmt"

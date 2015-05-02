@@ -1,4 +1,4 @@
-package mydb
+package mycron
 
 import (
 	"database/sql"
@@ -24,7 +24,8 @@ var (
 )
 
 func init() {
-	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8", "wida", "wida", "127.0.0.1", 3306, "mycron"))
+	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8",
+                    Mysql_user, Mysql_pwd, Mysql_host, Mysql_prot,Mysql_dbname))
 	if err != nil {
 		panic(err.Error())
 	}
@@ -34,7 +35,7 @@ func init() {
 }
 
 func GetCronList() (jobss []Job, e error) {
-	ut := int64(time.Now().Unix())
+    ut := int64(time.Now().Unix())
 	rows, err := db.Query("SELECT id,name,time,cmd,sTime,eTime,status,isrunning,modify,process,ip FROM cron where status = 1 and sTime < ? and eTime > ?", ut, ut)
 	if err != nil {
 		panic(err.Error())
@@ -61,9 +62,13 @@ func GetCronList() (jobss []Job, e error) {
 	return jobs, nil
 }
 
-
 func GetModifyList()(jobss []Job, e error){
-	ut := int64(time.Now().Unix())
+    defer func() {
+        if err := recover(); err != nil {
+            Log(err);
+        }
+    }()
+    ut := int64(time.Now().Unix())
 	rows, err := db.Query("SELECT id,name,time,cmd,sTime,eTime,status,isrunning,modify,process,ip FROM cron where sTime < ? and eTime > ? and modify = 1", ut, ut)
 	if err != nil {
 		panic(err.Error())
@@ -91,7 +96,7 @@ func GetModifyList()(jobss []Job, e error){
 }
 
 func UpdateModifyList() (int64, error){
-	ut := int64(time.Now().Unix())
+    ut := int64(time.Now().Unix())
 	stmtIns, err := db.Prepare("update cron set modify = 0 where sTime < ? and eTime > ? ")
 	if err != nil {
 		panic(err.Error())
@@ -106,7 +111,7 @@ func UpdateModifyList() (int64, error){
 }
 
 func (job Job) ChangeRunningStatu(status int) (int64, error) {
-	stmtIns, err := db.Prepare("update cron set isrunning = ? where id = ?")
+     stmtIns, err := db.Prepare("update cron set isrunning = ? where id = ?")
 	if err != nil {
 		panic(err.Error())
 	}
