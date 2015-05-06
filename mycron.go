@@ -48,11 +48,14 @@ func jobrun(job mycron.Job){
         }
     }()
     job.ChangeRunningStatu(1)
+    job.JobStep(0,"start")
     s, e := mycron.ExecWithTimeout(time.Second*10, job.Cmd)
     if e != nil {
         fmt.Print(e)
+        job.JobStep(3,e.Error());
     }
     job.ChangeRunningStatu(0)
+    job.JobStep(1,s);
     fmt.Println(s)
 }
 

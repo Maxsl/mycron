@@ -123,3 +123,17 @@ func (job Job) ChangeRunningStatu(status int) (int64, error) {
 	}
 	return result.RowsAffected()
 }
+
+
+func (job Job) JobStep(step int,str string) (int64,error){
+    stmtIns, err := db.Prepare("insert into cron_hist set cId = ?,step = ?,time = ?,ret=?")
+    if err != nil {
+        panic(err.Error())
+    }
+    defer stmtIns.Close()
+    result, err := stmtIns.Exec(job.ID, step,time.Now().Format("2006-01-02 15:04:05"),str)
+    if err != nil {
+        panic(err.Error())
+    }
+    return result.RowsAffected()
+}
