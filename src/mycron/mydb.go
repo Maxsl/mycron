@@ -110,7 +110,7 @@ func UpdateModifyList() (int64, error){
 	return result.RowsAffected()
 }
 
-func (job Job) ChangeRunningStatu(status int) (int64, error) {
+func (job Job) ChangeRunningStatus(status int) (int64, error) {
      stmtIns, err := db.Prepare("update cron set isrunning = ? where id = ?")
 	if err != nil {
 		panic(err.Error())

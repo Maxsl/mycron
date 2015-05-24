@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS `cron` (
   `modify` tinyint(1) NOT NULL DEFAULT '0',
   `process` tinyint(2) NOT NULL DEFAULT '1' COMMENT '进程数量',
   `ip` varchar(20) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT ''
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
 
 --
 -- 转存表中的数据 `cron`
@@ -34,4 +34,4 @@ CREATE TABLE IF NOT EXISTS `history` (
   `dotime` int(11) NOT NULL,
   `costtime` int(11) NOT NULL COMMENT '执行时间',
   `ret` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='执行历史记录';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='执行历史记录';

@@ -6,10 +6,13 @@ import (
     "git.oschina.net/wida/mycron/src/mycron"
     "time"
 )
-
+var(
+    processSet =  mycron.NewSet()  //当前正在跑的程序集合
+)
 func main() {
     jobs, _ := mycron.GetCronList()
     c := cron.New()
+
     defer func() {
         c.Stop()
     }()
@@ -43,26 +46,22 @@ func main() {
 
 func jobrun(job mycron.Job){
     defer func() {
+        processSet.Remove(job.ID)
         if err := recover(); err != nil {
             mycron.Log(err);
         }
     }()
-    job.ChangeRunningStatu(1)
+    job.ChangeRunningStatus(1)
     job.JobStep(0,"start")
+    processSet.Add(job.ID)
     s, e := mycron.ExecWithTimeout(time.Second*10, job.Cmd)
     if e != nil {
         fmt.Print(e)
+        processSet.Remove(job.ID)
         job.JobStep(3,e.Error());
     }
-    job.ChangeRunningStatu(0)
+    job.ChangeRunningStatus(0)
+    processSet.Remove(job.ID)
     job.JobStep(1,s);
     fmt.Println(s)
 }
-
-/*
-func printfEntry(c *cron.Cron) {
-    for _, v := range c.Entries() {
-        fmt.Println(v.ID, v.Status, v.Start, v.Ending)
-    }
-}
-*/
