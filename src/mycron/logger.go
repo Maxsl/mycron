@@ -10,7 +10,6 @@ func init() {
     logger.SetLevel(logger.ERROR)
 }
 
-
 func Log(v ...interface{}) {
     logger.Error(v);
 }
