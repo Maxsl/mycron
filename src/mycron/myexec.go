@@ -7,18 +7,20 @@ import (
 	"os"
 	"strings"
 	"errors"
+    "bytes"
 )
 
 func ExecWithTimeout(d time.Duration, line string)(string, error) {
 	shell := os.Getenv("SHELL")
 	cmd := exec.Command(shell, "-c", line)
+    var out bytes.Buffer
+    cmd.Stdout = &out
 	if err := cmd.Start(); err != nil {
 		return "" , err
 	}
 	if d <= 0 {
 		cmd.Wait()
-		b, err := exec.Command(shell, "-c", line).Output()
-		return strings.TrimSpace(string(b)),err
+		return strings.TrimSpace(string(out.String())),err
 	}
 
 	done := make(chan error)
@@ -34,8 +36,7 @@ func ExecWithTimeout(d time.Duration, line string)(string, error) {
 		if err !=nil{
 			return "",err
 		}
-		b, err := exec.Command(shell, "-c", line).Output()
-		return strings.TrimSpace(string(b)),err
+		return strings.TrimSpace(string(out.String())),err
 	}
 }
 

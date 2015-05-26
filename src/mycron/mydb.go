@@ -16,6 +16,7 @@ type Job struct {
 	IsModify        uint8
 	Process         uint8
 	Ip              string
+    Singleton       uint8
 }
 
 var (
@@ -36,7 +37,7 @@ func init() {
 
 func GetCronList() (jobss []Job, e error) {
     ut := int64(time.Now().Unix())
-	rows, err := db.Query("SELECT id,name,time,cmd,sTime,eTime,status,isrunning,modify,process,ip FROM cron where status = 1 and sTime < ? and eTime > ?", ut, ut)
+	rows, err := db.Query("SELECT id,name,time,cmd,sTime,eTime,status,isrunning,modify,process,ip,singleton FROM cron where status = 1 and sTime < ? and eTime > ?", ut, ut)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -50,7 +51,7 @@ func GetCronList() (jobss []Job, e error) {
 	// Fetch rows
 	for rows.Next() {
 		err = rows.Scan(&jobs[i].ID, &jobs[i].Name, &jobs[i].Time, &jobs[i].Cmd, &jobs[i].STime, &jobs[i].ETime,
-			&jobs[i].Status, &jobs[i].Running,&jobs[i].IsModify,&jobs[i].Process,&jobs[i].Ip)
+			&jobs[i].Status, &jobs[i].Running,&jobs[i].IsModify,&jobs[i].Process,&jobs[i].Ip,&jobs[i].Singleton)
 		if err != nil {
 			panic(err.Error())
 		}
@@ -69,7 +70,7 @@ func GetModifyList()(jobss []Job, e error){
         }
     }()
     ut := int64(time.Now().Unix())
-	rows, err := db.Query("SELECT id,name,time,cmd,sTime,eTime,status,isrunning,modify,process,ip FROM cron where sTime < ? and eTime > ? and modify = 1", ut, ut)
+	rows, err := db.Query("SELECT id,name,time,cmd,sTime,eTime,status,isrunning,modify,process,ip ,singleton FROM cron where sTime < ? and eTime > ? and modify = 1", ut, ut)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -83,7 +84,7 @@ func GetModifyList()(jobss []Job, e error){
 	// Fetch rows
 	for rows.Next() {
 		err = rows.Scan(&jobs[i].ID, &jobs[i].Name, &jobs[i].Time, &jobs[i].Cmd, &jobs[i].STime,
-					&jobs[i].ETime, &jobs[i].Status, &jobs[i].Running,&jobs[i].IsModify,&jobs[i].Process,&jobs[i].Ip)
+					&jobs[i].ETime, &jobs[i].Status, &jobs[i].Running,&jobs[i].IsModify,&jobs[i].Process,&jobs[i].Ip,&jobs[i].Singleton)
 		if err != nil {
 			panic(err.Error())
 		}

@@ -44,17 +44,21 @@ func main() {
     }
 }
 
-func jobrun(job mycron.Job){
+func jobrun(job mycron.Job)  {
     defer func() {
-        processSet.Remove(job.ID)
         if err := recover(); err != nil {
             mycron.Log(err);
+            processSet.Remove(job.ID)
         }
     }()
+    fmt.Println(processSet.List())
+    if job.Singleton == 1 && processSet.Has(job.ID) { // 如果是单例而且上次还非未退出
+        return
+    }
+    processSet.Add(job.ID)
     job.ChangeRunningStatus(1)
     job.JobStep(0,"start")
-    processSet.Add(job.ID)
-    s, e := mycron.ExecWithTimeout(time.Second*10, job.Cmd)
+    s, e := mycron.ExecWithTimeout(0, job.Cmd)
     if e != nil {
         fmt.Print(e)
         processSet.Remove(job.ID)

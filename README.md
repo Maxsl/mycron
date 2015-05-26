@@ -25,8 +25,9 @@
       `modify` tinyint(1) NOT NULL DEFAULT '0',
       `process` tinyint(2) NOT NULL DEFAULT '1' COMMENT '进程数量',
       `ip` varchar(20) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',
+      `singleton` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否单例执行0非单例，1单例',
       PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8
+    ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8
 
 ###任务执行记录
 
