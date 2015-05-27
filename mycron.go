@@ -1,5 +1,4 @@
 package main
-
 import (
     "fmt"
     "git.oschina.net/wida/mycron/src/cron"
@@ -51,7 +50,6 @@ func jobrun(job mycron.Job)  {
             processSet.Remove(job.ID)
         }
     }()
-    fmt.Println(processSet.List())
     if job.Singleton == 1 && processSet.Has(job.ID) { // 如果是单例而且上次还非未退出
         return
     }

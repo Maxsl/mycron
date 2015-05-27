@@ -8,11 +8,17 @@ import (
 	"strings"
 	"errors"
     "bytes"
+    "runtime"
 )
 
 func ExecWithTimeout(d time.Duration, line string)(string, error) {
-	shell := os.Getenv("SHELL")
-	cmd := exec.Command(shell, "-c", line)
+    var cmd * exec.Cmd
+    if runtime.GOOS == "windows"{
+        cmd = exec.Command("cmd", "/C", line)
+    }else {
+        shell := os.Getenv("SHELL")
+        cmd = exec.Command(shell, "-c", line)
+    }
     var out bytes.Buffer
     cmd.Stdout = &out
 	if err := cmd.Start(); err != nil {

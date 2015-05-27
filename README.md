@@ -7,7 +7,7 @@
 
 3. 任务运行状态全部透明化
 
-4. 暂时只支持linux  脚本入口命令是 shell -c
+4. 支持*nux 和 windows  脚本入口命令分别是 shell -c  和  cmd /c 
 
 ##Tables
 
