@@ -3,6 +3,7 @@
     <CLASSES>
       <root url="file://$PROJECT_DIR$/../../../github.com" />
       <root url="file://$PROJECT_DIR$/../goUdpLog" />
+      <root url="file://D:/Go/src" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

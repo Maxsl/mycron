@@ -193,10 +193,11 @@ func (c *Cron) run() {
 					key = k
 				}
 			}
+			//修复后台关停任务后开启无效的bug
+			newEntry.Next = newEntry.Schedule.Next(now)
 			if key < 0 {
 				c.entries = append(c.entries, newEntry)
 			} else {
-				newEntry.Next = newEntry.Schedule.Next(now)
 				c.entries[key] = newEntry
 			}
 
