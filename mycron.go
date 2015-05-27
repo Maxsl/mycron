@@ -55,13 +55,15 @@ func jobrun(job mycron.Job)  {
     job.ChangeRunningStatus(1)
     job.JobStep(0,"start")
     s, e := mycron.ExecWithTimeout(0, job.Cmd)
+    job.ChangeRunningStatus(0)
     if e != nil {
         fmt.Print(e)
         processSet.Remove(job.ID)
         job.JobStep(3,e.Error());
+        return
     }
-    job.ChangeRunningStatus(0)
-    processSet.Remove(job.ID)
+
     job.JobStep(1,s);
     fmt.Println(s)
+    processSet.Remove(job.ID)
 }

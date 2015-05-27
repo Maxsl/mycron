@@ -5,6 +5,11 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"time"
+    "os/exec"
+    "runtime"
+    "os"
+    "strings"
+    "bytes"
 )
 
 type Job struct {
@@ -17,6 +22,12 @@ type Job struct {
 	Process         uint8
 	Ip              string
     Singleton       uint8
+}
+
+type RunRet struct {
+    Pid   int
+    Out   string
+    Err   error
 }
 
 var (
@@ -137,4 +148,65 @@ func (job Job) JobStep(step int,str string) (int64,error){
         panic(err.Error())
     }
     return result.RowsAffected()
+}
+
+func (job Job) ExecWithTimeout() (string, error) {
+    job.ChangeRunningStatus(1)
+    job.JobStep(0,"start")
+  /*  if job.Process > 1 {
+        process := make(chan bool,job.Process)
+        for i:=0; i< job.Process; i++{
+            go func() {
+                s, e := ExecWithTimeout(0, job.Cmd)
+                job.ChangeRunningStatus(0)
+                if e != nil {
+                    job.JobStep(3,e.Error())
+                    return "" , e
+                }
+                job.JobStep(1,s)
+                process <- true
+            }()
+        }
+        for i:=0 ;i <len(process);i++{
+            <- process
+        }
+        job.JobStep(1,s)
+        return "",nil
+    }else{*/
+        s, e := ExecWithTimeout(0, job.Cmd)
+        job.ChangeRunningStatus(0)
+        if e != nil {
+            job.JobStep(3,e.Error())
+            return "" , e
+        }
+        job.JobStep(1,s);
+        return s ,nil
+   // }
+}
+
+func (job Job) Exec() RunRet {
+    var cmd * exec.Cmd
+    if runtime.GOOS == "windows"{
+        cmd = exec.Command("cmd", "/C", job.Cmd)
+    }else {
+        shell := os.Getenv("SHELL")
+        cmd = exec.Command(shell, "-c", job.Cmd)
+    }
+    var out bytes.Buffer
+    cmd.Stdout = &out
+    if err := cmd.Start(); err != nil {
+        return  RunRet{cmd.Process.Pid,"",err}
+    }
+    done := make(chan error)
+    go func() {
+        done <- cmd.Wait()
+    }()
+   // fmt.Println(cmd.Process.Pid)
+    select {
+    case  err :=<-done:
+        if err !=nil{
+            return RunRet{cmd.Process.Pid,"",err}
+        }
+    }
+    return RunRet{cmd.Process.Pid,strings.TrimSpace(string(out.String())),err}
 }
