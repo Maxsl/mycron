@@ -11,7 +11,6 @@ var(
 func main() {
     jobs, _ := mycron.GetCronList()
     c := cron.New()
-
     defer func() {
         c.Stop()
     }()
@@ -25,20 +24,19 @@ func main() {
     }
     //start
     c.Start()
-
     //监听更新事件
     for {
         select {
-        case <-time.After(time.Second):
-            jobs, _ := mycron.GetModifyList()
-            for i := 0; i < len(jobs); i++ {
-                job := jobs[i]
-                c.AddFunc(job.Time,
-                func() {jobrun(job)},
-                int(job.Status), int(job.ID), int64(job.STime), int64(job.ETime))
-            }
-            mycron.UpdateModifyList()
-            continue
+            case <-time.After(time.Second):
+                jobs, _ := mycron.GetModifyList()
+                for i := 0; i < len(jobs); i++ {
+                    job := jobs[i]
+                    c.AddFunc(job.Time,
+                    func() {jobrun(job)},
+                    int(job.Status), int(job.ID), int64(job.STime), int64(job.ETime))
+                }
+                mycron.UpdateModifyList()
+                continue
         }
     }
 }

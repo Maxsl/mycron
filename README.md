@@ -38,7 +38,7 @@
       `time` datetime NOT NULL,
       `ret` varchar(255) DEFAULT NULL,
       PRIMARY KEY (`id`)
-    ) ENGINE=InnoD式B  DEFAULT CHARSET=utf8;
+    ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 ###示例:
     INSERT INTO `cron` (`id`, `name`, `time`, `cmd`, `sTIme`, `eTime`, `status`, `isrunning`, `modify`, `process`, `ip`) VALUES
