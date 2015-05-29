@@ -10,6 +10,7 @@ import (
     "os"
     "strings"
     "bytes"
+    "sync"
 )
 
 type Job struct {
@@ -137,54 +138,39 @@ func (job Job) ChangeRunningStatus(status int) (int64, error) {
 }
 
 
-func (job Job) JobStep(step int,str string) (int64,error){
-    stmtIns, err := db.Prepare("insert into cron_hist set cId = ?,step = ?,time = ?,ret=?")
+func (job Job) JobStep(step int,str string,process_id,branch int) (int64,error){
+    stmtIns, err := db.Prepare("insert into cron_hist set cId = ?,step = ?,process_id =? ,branch =? ,time = ?,ret=?")
     if err != nil {
         panic(err.Error())
     }
     defer stmtIns.Close()
-    result, err := stmtIns.Exec(job.ID, step,time.Now().Format("2006-01-02 15:04:05"),str)
+    result, err := stmtIns.Exec(job.ID, step,process_id,branch,time.Now().Format("2006-01-02 15:04:05"),str)
     if err != nil {
         panic(err.Error())
     }
     return result.RowsAffected()
 }
 
-func (job Job) ExecWithTimeout() (string, error) {
+func (job Job) Run(){
     job.ChangeRunningStatus(1)
-    job.JobStep(0,"start")
-  /*  if job.Process > 1 {
-        process := make(chan bool,job.Process)
-        for i:=0; i< job.Process; i++{
-            go func() {
-                s, e := ExecWithTimeout(0, job.Cmd)
-                job.ChangeRunningStatus(0)
-                if e != nil {
-                    job.JobStep(3,e.Error())
-                    return "" , e
-                }
-                job.JobStep(1,s)
-                process <- true
-            }()
+    job.JobStep(0,"start",0,0)
+    if job.Process > 1 { //多进程执行
+        wg := new(sync.WaitGroup)
+        wg.Add(int(job.Process))
+        for i := 0;i< int(job.Process);i++ {
+            go func(n int) {
+                job.Exec(n+1) //分支id+1
+                wg.Done()
+            }(i)
         }
-        for i:=0 ;i <len(process);i++{
-            <- process
-        }
-        job.JobStep(1,s)
-        return "",nil
-    }else{*/
-        s, e := ExecWithTimeout(0, job.Cmd)
-        job.ChangeRunningStatus(0)
-        if e != nil {
-            job.JobStep(3,e.Error())
-            return "" , e
-        }
-        job.JobStep(1,s);
-        return s ,nil
-   // }
+        wg.Wait()
+    }else{//单进程执行
+        job.Exec(0)
+    }
+    job.ChangeRunningStatus(0)
 }
 
-func (job Job) Exec() RunRet {
+func (job Job) Exec(i int)  {
     var cmd * exec.Cmd
     if runtime.GOOS == "windows"{
         cmd = exec.Command("cmd", "/C", job.Cmd)
@@ -192,21 +178,31 @@ func (job Job) Exec() RunRet {
         shell := os.Getenv("SHELL")
         cmd = exec.Command(shell, "-c", job.Cmd)
     }
+
     var out bytes.Buffer
     cmd.Stdout = &out
     if err := cmd.Start(); err != nil {
-        return  RunRet{cmd.Process.Pid,"",err}
+        Log(job.ID,cmd.Path,err.Error(),cmd.Process.Pid,i)
+        job.JobStep(3,err.Error(),cmd.Process.Pid,i)
+        return
     }
+    start := "start"
+    if i >0 {
+        start = "branch start"
+    }
+    job.JobStep(0,start,cmd.Process.Pid,i)
     done := make(chan error)
     go func() {
         done <- cmd.Wait()
     }()
-   // fmt.Println(cmd.Process.Pid)
     select {
     case  err :=<-done:
         if err !=nil{
-            return RunRet{cmd.Process.Pid,"",err}
+            Log(job.ID,cmd.Path,err.Error(),cmd.Process.Pid,i)
+            job.JobStep(3,err.Error(),cmd.Process.Pid,i)
+            return
         }
     }
-    return RunRet{cmd.Process.Pid,strings.TrimSpace(string(out.String())),err}
+    fmt.Println(strings.TrimSpace(out.String()))
+    job.JobStep(1,strings.TrimSpace(out.String()),cmd.Process.Pid,i)
 }

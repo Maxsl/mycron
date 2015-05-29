@@ -1,6 +1,5 @@
 package main
 import (
-    "fmt"
     "git.oschina.net/wida/mycron/src/cron"
     "git.oschina.net/wida/mycron/src/mycron"
     "time"
@@ -52,18 +51,6 @@ func jobrun(job mycron.Job)  {
         return
     }
     processSet.Add(job.ID)
-    job.ChangeRunningStatus(1)
-    job.JobStep(0,"start")
-    s, e := mycron.ExecWithTimeout(0, job.Cmd)
-    job.ChangeRunningStatus(0)
-    if e != nil {
-        fmt.Print(e)
-        processSet.Remove(job.ID)
-        job.JobStep(3,e.Error());
-        return
-    }
-
-    job.JobStep(1,s);
-    fmt.Println(s)
+    job.Run()
     processSet.Remove(job.ID)
 }
