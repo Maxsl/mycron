@@ -34,11 +34,13 @@
     CREATE TABLE `cron_hist` (
       `id` int(11) NOT NULL AUTO_INCREMENT,
       `cId` int(11) NOT NULL,
+      `process_id` int(11) NOT NULL DEFAULT '0' COMMENT 'shell进程id',
+      `branch` int(11) NOT NULL DEFAULT '0' COMMENT '执行分支',
       `step` tinyint(3) NOT NULL,
       `time` datetime NOT NULL,
       `ret` varchar(255) DEFAULT NULL,
       PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
+    ) ENGINE=InnoDB AUTO_INCREMENT=60610 DEFAULT CHARSET=utf8
 
 ###示例:
     INSERT INTO `cron` (`id`, `name`, `time`, `cmd`, `sTIme`, `eTime`, `status`, `isrunning`, `modify`, `process`, `ip`) VALUES
