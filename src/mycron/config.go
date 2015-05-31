@@ -5,7 +5,7 @@ import (
 )
 
 const (
-    ConfigPath = "../etc/mycron.conf"
+    ConfigPath = "/home/wida/goworkspace/src/git.oschina.net/wida/mycron/etc/mycron.conf"
 )
 
 var(
