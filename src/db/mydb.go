@@ -1,22 +1,34 @@
-package mycron
+package db
 
 import (
     "database/sql"
-    "fmt"
     "reflect"
     _ "github.com/go-sql-driver/mysql"
-    "strconv"
 )
 
+type rawSet struct{
+    query string
+    args  []interface{}
+    db  *sql.DB
+}
+
+// raw query seter
+type RawSeter interface {
+    Exec() (sql.Result, error)
+    QueryRow(...interface{}) error
+    QueryRows(...interface{}) (int64, error)
+    SetArgs(...interface{}) RawSeter
+}
+
 //插入
-func insert(db *sql.DB, sqlstr string, args ...interface{}) (int64, error) {
-    stmtIns, err := db.Prepare(sqlstr)
+func (r *rawSet) Insert() (int64, error) {
+    stmtIns, err := r.db.Prepare(r.query)
     if err != nil {
         panic(err.Error())
     }
     defer stmtIns.Close()
 
-    result, err := stmtIns.Exec(args...)
+    result, err := stmtIns.Exec(r.args...)
     if err != nil {
         panic(err.Error())
     }
@@ -24,29 +36,28 @@ func insert(db *sql.DB, sqlstr string, args ...interface{}) (int64, error) {
 }
 
 //修改和删除
-func exec(db *sql.DB, sqlstr string, args ...interface{}) (int64, error) {
-    stmtIns, err := db.Prepare(sqlstr)
+func (r *rawSet) Exec() (int64, error) {
+    stmtIns, err := r.db.Prepare(r.query)
     if err != nil {
         panic(err.Error())
     }
     defer stmtIns.Close()
 
-    result, err := stmtIns.Exec(args...)
+    result, err := stmtIns.Exec(r.args...)
     if err != nil {
         panic(err.Error())
     }
     return result.RowsAffected()
 }
 
-//取一行数据，注意这类取出来的结果都是string
-func fetchRow(db *sql.DB, sqlstr string, args ...interface{}) (*map[string]string, error) {
-    stmtOut, err := db.Prepare(sqlstr)
+func (r *rawSet) QueryRow(containers ...interface{}) error {
+    stmtOut, err := r.db.Prepare(r.query)
     if err != nil {
         panic(err.Error())
     }
     defer stmtOut.Close()
 
-    rows, err := stmtOut.Query(args...)
+    rows, err := stmtOut.Query(r.args...)
     if err != nil {
         panic(err.Error())
     }
@@ -83,15 +94,15 @@ func fetchRow(db *sql.DB, sqlstr string, args ...interface{}) (*map[string]strin
     return &ret, nil
 }
 
-//取多行，注意这类取出来的结果都是string
-func fetchRows(db *sql.DB, sqlstr string, args ...interface{}) (*[]map[string]string, error) {
-    stmtOut, err := db.Prepare(sqlstr)
+//
+func (r *rawSet) QueryRows (containers ...interface{}) (int64, error) {
+    stmtOut, err := r.db.Prepare(r.query)
     if err != nil {
         panic(err.Error())
     }
     defer stmtOut.Close()
 
-    rows, err := stmtOut.Query(args...)
+    rows, err := stmtOut.Query(r.args...)
     if err != nil {
         panic(err.Error())
     }
@@ -129,8 +140,14 @@ func fetchRows(db *sql.DB, sqlstr string, args ...interface{}) (*[]map[string]st
     return &ret, nil
 }
 
+// set args for every query
+func (o rawSet) SetArgs(args ...interface{}) RawSeter {
+    o.args = args
+    return &o
+}
+
 // set field value to row container
-func setFieldValue(ind reflect.Value, value interface{}) {
+func (r *rawSet) setFieldValue(ind reflect.Value, value interface{}) {
     switch ind.Kind() {
         case reflect.Bool:
         if value == nil {

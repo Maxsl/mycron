@@ -1,4 +1,4 @@
-package mycron
+package db
 
 import (
     "fmt"
