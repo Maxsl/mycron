@@ -4,6 +4,8 @@ import (
     "database/sql"
     "reflect"
     _ "github.com/go-sql-driver/mysql"
+    "strings"
+    "errors"
 )
 
 type rawSet struct{
@@ -14,8 +16,8 @@ type rawSet struct{
 
 // raw query seter
 type RawSeter interface {
-    Exec() (sql.Result, error)
-    QueryRow(...interface{}) error
+    Exec() (int64, error)
+    QueryRow(interface{}) error
     QueryRows(...interface{}) (int64, error)
     SetArgs(...interface{}) RawSeter
 }
@@ -50,7 +52,7 @@ func (r *rawSet) Exec() (int64, error) {
     return result.RowsAffected()
 }
 
-func (r *rawSet) QueryRow(containers ...interface{}) error {
+func (r *rawSet) QueryRow(container interface{}) error {
     stmtOut, err := r.db.Prepare(r.query)
     if err != nil {
         panic(err.Error())
@@ -67,31 +69,40 @@ func (r *rawSet) QueryRow(containers ...interface{}) error {
         panic(err.Error())
     }
 
-    values := make([]sql.RawBytes, len(columns))
-    scanArgs := make([]interface{}, len(values))
-    ret := make(map[string]string, len(scanArgs))
+    val := reflect.ValueOf(container)
+    ind := reflect.Indirect(val)
 
-    for i := range values {
-        scanArgs[i] = &values[i]
+    if val.Kind() != reflect.Ptr {
+        panic("args must be use ptr")
     }
-    for rows.Next() {
-        err = rows.Scan(scanArgs...)
-        if err != nil {
+
+    defer rows.Close()
+    if rows.Next() {
+        columnsMp := make(map[string]interface{}, len(columns))
+
+        refs := make([]interface{}, 0, len(columns))
+        for _, col := range columns {
+            var ref interface{}
+            columnsMp[col] = &ref
+            refs = append(refs, &ref)
+        }
+
+        if err := rows.Scan(refs...); err != nil {
             panic(err.Error())
         }
-        var value string
 
-        for i, col := range values {
-            if col == nil {
-                value = "NULL"
-            } else {
-                value = string(col)
+        for i := 0; i < ind.NumField(); i++ {
+            f := ind.Field(i)
+            fe := ind.Type().Field(i)
+            if v, ok := columnsMp[strings.ToLower(fe.Name)]; ok {
+                value := reflect.ValueOf(v).Elem().Interface()
+                r.setFieldValue(f, value)
             }
-            ret[columns[i]] = value
         }
-        break //get the first row only
+    }else{
+        return errors.New("no row")
     }
-    return &ret, nil
+    return nil
 }
 
 //
@@ -137,7 +148,7 @@ func (r *rawSet) QueryRows (containers ...interface{}) (int64, error) {
         }
         ret = append(ret, vmap)
     }
-    return &ret, nil
+    return 0, nil
 }
 
 // set args for every query
