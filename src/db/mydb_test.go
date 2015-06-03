@@ -2,30 +2,29 @@ package db
 
 import (
     "testing"
-    "git.oschina.net/wida/mycron/src/mycron"
     "database/sql"
-    _ "github.com/go-sql-driver/mysql"
     "fmt"
 )
-var (
-    db  *sql.DB
-    err error
-)
-func init() {
-    db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8",
-    mycron.Mysql_user, mycron.Mysql_pwd, mycron.Mysql_host, mycron.Mysql_prot,mycron.Mysql_dbname))
+func TestMyDb(t *testing.T) {
+    db, err := sql.Open("mysql", "root:@tcp(127.0.0.1:3306)/mycron?charset=utf8")
     if err != nil {
-        panic(err.Error())
+        t.Error(err.Error())
     }
-    db.SetMaxOpenConns(30)
-    db.SetMaxIdleConns(10)
-    db.Ping()
+    defer db.Close()
+    d := Item{}
+    err = fetchRow(&d,db, "SELECT * FROM cron where id=?",2)
+    if err != nil{
+        t.Error(err.Error())
+    }
+    fmt.Println(d)
+    fmt.Println(d["uid"] == 1)
+
+    s := & []Item{}
+
+    err = fetchRows(s,db,"SELECT * FROM cron")
+    if err != nil{
+        t.Error(err.Error())
+    }
+    fmt.Println(s)
 }
 
-func TestQueryRow (t *testing.T) {
-    rawset := rawSet{db:db}
-    rawset.query ="SELECT * FROM cron where id =?"
-    job := mycron.Job{}
-    rawset.SetArgs(1).QueryRow(&job)
-    fmt.Println(job)
-}
