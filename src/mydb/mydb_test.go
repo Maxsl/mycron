@@ -28,5 +28,6 @@ func TestMyDb(t *testing.T) {
         t.Error(err.Error())
     }
     fmt.Println(s,i)
+
 }
 
