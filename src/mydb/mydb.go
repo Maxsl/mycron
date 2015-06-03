@@ -1,4 +1,4 @@
-package db
+package mydb
 
 import (
     "database/sql"
@@ -7,14 +7,62 @@ import (
     "errors"
 )
 
-func insert(db *sql.DB, sqlstr string, args ...interface{}) (int64, error) {
-    stmtIns, err := db.Prepare(sqlstr)
+type MyDB struct {
+   DB *sql.DB
+}
+
+func Open(driverName, dataSourceName string) (MyDB,error) {
+    db := MyDB{}
+    d,err:= sql.Open(driverName, dataSourceName)
+    db.DB =d
+    return db,err
+}
+
+func (my *MyDB) Close() {
+    my.DB.Close()
+}
+
+func (my *MyDB) Raw(query string, args ...interface{}) RawSeter {
+    o := NewRawSet(my.DB,query,args)
+    return o
+}
+
+// Item
+type Item map[string]interface{}
+
+type rawSet struct {
+    db *sql.DB
+    sql string
+    args []interface{}
+}
+
+// raw query seter
+type RawSeter interface {
+    Insert() (int64, error)
+    Exec() (int64, error)
+    FetchRow(interface{}) error
+    FetchRows(interface{}) (int64, error)
+ //   SetArgs(...interface{}) RawSeter
+}
+
+
+func NewRawSet(db *sql.DB ,query string, args []interface{}) RawSeter {
+    o := new(rawSet)
+    o.sql = query
+    o.args = args
+    o.db = db
+    return o
+}
+
+//插入
+func (r *rawSet) Insert() (int64, error) {
+    stmtIns, err := r.db.Prepare(r.sql)
     if err != nil {
         panic(err.Error())
     }
     defer stmtIns.Close()
 
-    result, err := stmtIns.Exec(args...)
+    result, err := stmtIns.Exec(r.args...)
     if err != nil {
         panic(err.Error())
     }
@@ -22,30 +70,28 @@ func insert(db *sql.DB, sqlstr string, args ...interface{}) (int64, error) {
 }
 
 //修改和删除
-func exec(db *sql.DB, sqlstr string, args ...interface{}) (int64, error) {
-    stmtIns, err := db.Prepare(sqlstr)
+func (r *rawSet) Exec() (int64, error) {
+    stmtIns, err := r.db.Prepare(r.sql)
     if err != nil {
         panic(err.Error())
     }
     defer stmtIns.Close()
 
-    result, err := stmtIns.Exec(args...)
+    result, err := stmtIns.Exec(r.args...)
     if err != nil {
         panic(err.Error())
     }
     return result.RowsAffected()
 }
 
-func fetchRow(ptr interface{},db *sql.DB, sqlstr string, args ...interface{})  error {
-    rows,columns,err := rows(db,sqlstr, args)
+func (r *rawSet) FetchRow(ptr interface{}) ( error) {
+    rows,columns,err := rows(r.db,r.sql, r.args)
     defer rows.Close()
     columnsLen := len(columns)
-    kind, _, scan, err := scanVariables(ptr, columnsLen, false)
+    kind, scan, err := scanVariables(ptr, columnsLen, false)
     if err != nil {
         return err
     }
-
-    // Return data
     val := reflect.ValueOf(ptr).Elem()
     defer rows.Close()
     for rows.Next() {
@@ -53,11 +99,7 @@ func fetchRow(ptr interface{},db *sql.DB, sqlstr string, args ...interface{})  e
         if err != nil {
             return err
         }
-
         switch kind {
-            /*   case reflect.Struct: // struct
-               val.Set(reflect.ValueOf(ptrRow).Elem())*/
-
             case reflect.Map: //map
             row := make(map[string]interface{}, columnsLen)
             for i := 0; i < columnsLen; i++ {
@@ -79,36 +121,32 @@ func fetchRow(ptr interface{},db *sql.DB, sqlstr string, args ...interface{})  e
     return nil
 }
 
-func fetchRows(ptr interface{},db *sql.DB, sqlstr string, args ...interface{}) ( error) {
-    rows, columns, err := rows(db,sqlstr, args)
+func (r *rawSet) FetchRows(ptr interface{}) (int64, error) {
+    rows,columns,err := rows(r.db,r.sql, r.args)
     if err != nil {
         panic(err.Error())
-        return err
+        return 0,err
     }
 
     defer rows.Close()
     columnsLen := len(columns)
 
-    kind, _, scan, err := scanVariables(ptr, columnsLen, true)
+    kind, scan, err := scanVariables(ptr, columnsLen, true)
     if err != nil {
         panic(err.Error())
-        return err
+        return 0,err
     }
 
     //return data
     val := reflect.ValueOf(ptr).Elem()
-
+    var rowNum int64
     for rows.Next() {
         if err := rows.Scan(scan...); err != nil {
             panic(err.Error())
-            return err
+            return 0,err
         }
 
         switch kind {
-            /*
-                        case reflect.Struct: // struct
-                        val.Set(reflect.Append(val, reflect.ValueOf(ptrRow).Elem()))
-            */
             case reflect.Map: // map
             row := make(map[string]interface{}, columnsLen)
             for i := 0; i < columnsLen; i++ {
@@ -123,14 +161,15 @@ func fetchRows(ptr interface{},db *sql.DB, sqlstr string, args ...interface{}) (
             }
             val.Set(reflect.Append(val, reflect.ValueOf(row)))
         }
+        rowNum++
     }
 
     if err = rows.Err(); err != nil {
         panic(err.Error())
-        return err
+        return 0,err
     }
 
-    return nil
+    return rowNum,nil
 }
 
 func rows(db *sql.DB, sqlstr string, args []interface{}) (*sql.Rows, []string, error) {
@@ -152,27 +191,18 @@ func rows(db *sql.DB, sqlstr string, args []interface{}) (*sql.Rows, []string, e
     return rows,columns,nil
 }
 
-
-// Item
-type Item map[string]interface{}
-
-// Where
-type Where map[string]interface{}
-
 // Get scan variables
-func scanVariables(ptr interface{}, columnsLen int, isRows bool) (reflect.Kind, interface{}, []interface{}, error) {
+func scanVariables(ptr interface{}, columnsLen int, isRows bool) (reflect.Kind, []interface{}, error) {
     typ := reflect.ValueOf(ptr).Type()
 
     if typ.Kind() != reflect.Ptr {
-        return 0, nil, nil, errors.New("ptr is not a pointer")
+        return 0, nil, errors.New("ptr is not a pointer")
     }
-
-    //log.Printf("%s\n", dataType.Elem().Kind())
     elemTyp := typ.Elem()
 
     if isRows { // Rows
         if elemTyp.Kind() != reflect.Slice {
-            return 0, nil, nil, errors.New("ptr is not point a slice")
+            return 0, nil, errors.New("ptr is not point a slice")
         }
 
         elemTyp = elemTyp.Elem()
@@ -183,34 +213,16 @@ func scanVariables(ptr interface{}, columnsLen int, isRows bool) (reflect.Kind, 
     // element(value) is point to row
     scan := make([]interface{}, columnsLen)
 
-    //log.Printf("%s\n", elemKind)
-
-    if elemKind == reflect.Struct {
-        if columnsLen != elemTyp.NumField() {
-            return 0, nil, nil, errors.New("columnsLen is not equal elemTyp.NumField()")
-        }
-
-        row := reflect.New(elemTyp) // Data
-        for i := 0; i < columnsLen; i++ {
-            f := elemTyp.Field(i)
-            if !f.Anonymous { // && f.Tag.Get("json") != ""
-                scan[i] = row.Elem().FieldByIndex([]int{i}).Addr().Interface()
-            }
-        }
-
-        return elemKind, row.Interface(), scan, nil
-    }
-
     if elemKind == reflect.Map || elemKind == reflect.Slice {
         row := make([]interface{}, columnsLen) // Data
         for i := 0; i < columnsLen; i++ {
             scan[i] = &row[i]
         }
 
-        return elemKind, &row, scan, nil
+        return elemKind, scan, nil
     }
 
-    return 0, nil, nil, errors.New("ptr is not a point struct, map or slice")
+    return 0, nil, errors.New("ptr is not a point struct, map or slice")
 }
 
 // Type assertions
