@@ -1,7 +1,6 @@
 package mycron
 
 import (
-	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"time"
@@ -11,6 +10,7 @@ import (
     "strings"
     "bytes"
     "sync"
+    "git.oschina.net/wida/mycron/src/mydb"
 )
 
 type Job struct {
@@ -32,47 +32,45 @@ type RunRet struct {
 }
 
 var (
-	db  *sql.DB
-	err error
+    db  mydb.MyDB
+    err   error
 )
 
 func init() {
-	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8",
+    db, err = mydb.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8",
                     Mysql_user, Mysql_pwd, Mysql_host, Mysql_prot,Mysql_dbname))
 	if err != nil {
 		panic(err.Error())
 	}
-	db.SetMaxOpenConns(30)
-	db.SetMaxIdleConns(10)
-	db.Ping()
+    db.DB.SetMaxOpenConns(30)
+    db.DB.SetMaxIdleConns(10)
+    db.DB.Ping()
 }
 
 func GetCronList() (jobss []Job, e error) {
     ut := int64(time.Now().Unix())
-	rows, err := db.Query("SELECT id,name,time,cmd,sTime,eTime,status,isrunning,modify,process,ip,singleton FROM cron where status = 1 and sTime < ? and eTime > ?", ut, ut)
-	if err != nil {
-		panic(err.Error())
-	}
-	columns, err := rows.Columns()
-	if err != nil {
-		panic(err.Error())
-	}
-	values := make([]sql.RawBytes, len(columns))
-	jobs := make([]Job, len(values))
-	i := 0
-	// Fetch rows
-	for rows.Next() {
-		err = rows.Scan(&jobs[i].ID, &jobs[i].Name, &jobs[i].Time, &jobs[i].Cmd, &jobs[i].STime, &jobs[i].ETime,
-			&jobs[i].Status, &jobs[i].Running,&jobs[i].IsModify,&jobs[i].Process,&jobs[i].Ip,&jobs[i].Singleton)
-		if err != nil {
-			panic(err.Error())
-		}
-		i++
-	}
-	if err = rows.Err(); err != nil {
-		panic(err.Error())
-	}
-	return jobs, nil
+    var list = []mydb.Item{}
+    length,err := db.Raw("SELECT * FROM cron where status = 1 and sTime < ? and eTime > ?", ut, ut).FetchRows(&list)
+    if err != nil {
+        panic(err.Error())
+    }
+    jobs := make([]Job, length)
+    for i,val := range list {
+        //fmt.Println()
+        jobs[i].Cmd = val["cmd"]
+        jobs[i].ID = val["id"]
+        jobs[i].Name = val["name"]
+        jobs[i].STime = val["sTime"]
+        jobs[i].ETime = val["eTime"]
+        jobs[i].Status = val["status"]
+        jobs[i].Running = val["isrunning"]
+        jobs[i].IsModify = val["modify"]
+        jobs[i].Singleton = val["singleton"]
+        jobs[i].Ip = val["ip"]
+        jobs[i].IsModify = val["modify"]
+        jobs[i].Time = val["time"]
+    }
+    return jobs,nil
 }
 
 func GetModifyList()(jobss []Job, e error){
@@ -81,74 +79,44 @@ func GetModifyList()(jobss []Job, e error){
             Log(err);
         }
     }()
+
     ut := int64(time.Now().Unix())
-	rows, err := db.Query("SELECT id,name,time,cmd,sTime,eTime,status,isrunning,modify,process,ip ,singleton FROM cron where sTime < ? and eTime > ? and modify = 1", ut, ut)
-	if err != nil {
-		panic(err.Error())
-	}
-	columns, err := rows.Columns()
-	if err != nil {
-		panic(err.Error())
-	}
-	values := make([]sql.RawBytes, len(columns))
-	jobs := make([]Job, len(values))
-	i := 0
-	// Fetch rows
-	for rows.Next() {
-		err = rows.Scan(&jobs[i].ID, &jobs[i].Name, &jobs[i].Time, &jobs[i].Cmd, &jobs[i].STime,
-					&jobs[i].ETime, &jobs[i].Status, &jobs[i].Running,&jobs[i].IsModify,&jobs[i].Process,&jobs[i].Ip,&jobs[i].Singleton)
-		if err != nil {
-			panic(err.Error())
-		}
-		i++
-	}
-	if err = rows.Err(); err != nil {
-		panic(err.Error())
-	}
-	return jobs, nil
-}
-
-func UpdateModifyList() (int64, error){
-    ut := int64(time.Now().Unix())
-	stmtIns, err := db.Prepare("update cron set modify = 0 where sTime < ? and eTime > ? ")
-	if err != nil {
-		panic(err.Error())
-	}
-	defer stmtIns.Close()
-
-	result, err := stmtIns.Exec(ut, ut)
-	if err != nil {
-		panic(err.Error())
-	}
-	return result.RowsAffected()
-}
-
-func (job Job) ChangeRunningStatus(status int) (int64, error) {
-     stmtIns, err := db.Prepare("update cron set isrunning = ? where id = ?")
-	if err != nil {
-		panic(err.Error())
-	}
-	defer stmtIns.Close()
-
-	result, err := stmtIns.Exec(status, job.ID)
-	if err != nil {
-		panic(err.Error())
-	}
-	return result.RowsAffected()
-}
-
-
-func (job Job) JobStep(step int,str string,process_id,branch int) (int64,error){
-    stmtIns, err := db.Prepare("insert into cron_hist set cId = ?,step = ?,process_id =? ,branch =? ,time = ?,ret=?")
+    var list = []mydb.Item{}
+    length,err := db.Raw("SELECT * FROM cron where sTime < ? and eTime > ? and modify = 1", ut, ut).FetchRows(&list)
     if err != nil {
         panic(err.Error())
     }
-    defer stmtIns.Close()
-    result, err := stmtIns.Exec(job.ID, step,process_id,branch,time.Now().Format("2006-01-02 15:04:05"),str)
-    if err != nil {
-        panic(err.Error())
+    jobs := make([]Job, length)
+    for i,val := range *list {
+        //fmt.Println()
+        jobs[i].Cmd = string(val["cmd"])
+        jobs[i].ID = val["id"]
+        jobs[i].Name = val["name"]
+        jobs[i].STime = val["sTime"]
+        jobs[i].ETime = val["eTime"]
+        jobs[i].Status = val["status"]
+        jobs[i].Running = val["isrunning"]
+        jobs[i].IsModify = val["modify"]
+        jobs[i].Singleton = val["singleton"]
+        jobs[i].Ip = val["ip"]
+        jobs[i].IsModify = val["modify"]
+        jobs[i].Time = val["time"]
     }
-    return result.RowsAffected()
+    return jobs,nil
+}
+
+func UpdateModifyList() int64{
+    ut := int64(time.Now().Unix())
+    return db.Raw("update cron set modify = 0 where sTime < ? and eTime > ? ", ut, ut).Exec()
+}
+
+func (job Job) ChangeRunningStatus(status int) int64 {
+    return db.Raw("update cron set isrunning = ? where id = ?", status, job.ID).Exec()
+}
+
+
+func (job Job) JobStep(step int,str string,process_id,branch int) int64 {
+    return db.Raw(job.ID, step,process_id,branch,time.Now().Format("2006-01-02 15:04:05"),str).Exec()
 }
 
 func (job Job) Run(){

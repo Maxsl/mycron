@@ -100,6 +100,9 @@ func (r *rawSet) FetchRow(ptr interface{}) ( error) {
             return err
         }
         switch kind {
+            case reflect.Struct: // struct
+            //val.Set(reflect.ValueOf(ptrRow).Elem())
+
             case reflect.Map: //map
             row := make(map[string]interface{}, columnsLen)
             for i := 0; i < columnsLen; i++ {
@@ -213,7 +216,7 @@ func scanVariables(ptr interface{}, columnsLen int, isRows bool) (reflect.Kind, 
     // element(value) is point to row
     scan := make([]interface{}, columnsLen)
 
-    if elemKind == reflect.Map || elemKind == reflect.Slice {
+    if elemKind == reflect.Map || elemKind == reflect.Slice || elemKind == reflect.Struct {
         row := make([]interface{}, columnsLen) // Data
         for i := 0; i < columnsLen; i++ {
             scan[i] = &row[i]
