@@ -19,7 +19,7 @@ func main() {
         job := jobs[i]
         c.AddFunc(job.Time,
         func() {jobrun(job)},
-        int(job.Status), int(job.ID), int64(job.STime), int64(job.ETime))
+        int(job.Status), int(job.Id), int64(job.STime), int64(job.ETime))
     }
     //start
     c.Start()
@@ -32,7 +32,7 @@ func main() {
                     job := jobs[i]
                     c.AddFunc(job.Time,
                     func() {jobrun(job)},
-                    int(job.Status), int(job.ID), int64(job.STime), int64(job.ETime))
+                    int(job.Status), int(job.Id), int64(job.STime), int64(job.ETime))
                 }
                 mycron.UpdateModifyList()
                 continue
@@ -44,13 +44,13 @@ func jobrun(job mycron.Job)  {
     defer func() {
         if err := recover(); err != nil {
             mycron.Log(err);
-            processSet.Remove(job.ID)
+            processSet.Remove(job.Id)
         }
     }()
-    if job.Singleton == 1 && processSet.Has(job.ID) { // 如果是单例而且上次还非未退出
+    if job.Singleton == 1 && processSet.Has(job.Id) { // 如果是单例而且上次还非未退出
         return
     }
-    processSet.Add(job.ID)
+    processSet.Add(job.Id)
     job.Run()
-    processSet.Remove(job.ID)
+    processSet.Remove(job.Id)
 }

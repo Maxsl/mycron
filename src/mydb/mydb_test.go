@@ -2,10 +2,9 @@ package mydb
 
 import (
     "testing"
-    "fmt"
 )
 type Job struct {
-    ID              int
+    Id              int
     Name, Time, Cmd string
     STime, ETime    int
     Status          uint8
@@ -15,43 +14,59 @@ type Job struct {
     Ip              string
     Singleton       uint8
 }
-func TestMyDb(t *testing.T) {
-    db, err := Open("mysql", "wida:wida@tcp(127.0.0.1:3306)/mycron?charset=utf8")
-    if err != nil {
-        t.Error(err.Error())
-    }
+
+func TestFetchRow(t *testing.T) {
+    db, _ := Open("mysql", "wida:wida@tcp(127.0.0.1:3306)/mycron?charset=utf8")
     db.DB.SetMaxOpenConns(30)
     db.DB.SetMaxIdleConns(10)
     db.DB.Ping()
 
-    defer db.Close()
-/*    d := Item{}
-    err = db.Raw("SELECT * FROM cron where id=?",2).FetchRow(&d)
+    defer  db.Close()
+    d := Item{}
+    err := db.Raw("SELECT * FROM cron where id=?",2).FetchRow(&d)
     if (err != nil ){
         t.Error(err.Error())
     }
-    fmt.Println(d)
-    fmt.Println(d["uid"] == 1)
-
-    s := &[]Item{}
-    i,err:= db.Raw("SELECT * FROM cron").FetchRows(s)
-    if err != nil{
-        t.Error(err.Error())
+    if  d["name"] != "test2"{
+        t.Error("data no right")
     }
-    fmt.Println(s,i)*/
-
     var data Job
     err = db.Raw("SELECT * FROM cron where id=?",2).FetchRow(&data)
     if (err != nil ){
         t.Error(err.Error())
     }
-    fmt.Println(data)
+    if  data.Name != "test2"{
+        t.Error("data no right")
+    }
+}
 
+func TestFetchRows(t * testing.T){
+    db, _ := Open("mysql", "wida:wida@tcp(127.0.0.1:3306)/mycron?charset=utf8")
+    db.DB.SetMaxOpenConns(30)
+    db.DB.SetMaxIdleConns(10)
+    db.DB.Ping()
+
+    defer  db.Close()
+    s := []Item{}
+    i,err:= db.Raw("SELECT * FROM cron").FetchRows(&s)
+    if err != nil{
+        t.Error(err.Error())
+    }
+    if i != int64(len(s)){
+        t.Error("data no right")
+    }
+    if s[0]["name"] != "test"{
+        t.Error("data no right")
+    }
     var sdata []Job
     _,err = db.Raw("SELECT * FROM cron").FetchRows(&sdata)
     if (err != nil ){
         t.Error(err.Error())
     }
-    fmt.Println(sdata)
+    if i != int64(len(sdata)){
+        t.Error("data no right")
+    }
+    if sdata[1].Name != "test2"{
+        t.Error("data no right")
+    }
 }
-

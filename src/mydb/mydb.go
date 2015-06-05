@@ -6,18 +6,18 @@ import (
     "reflect"
     "errors"
     "strings"
-  //  "fmt"
+//  "fmt"
 )
 
 type MyDB struct {
-   DB *sql.DB
+    DB *sql.DB
 }
 
-func Open(driverName, dataSourceName string) (MyDB,error) {
+func Open(driverName, dataSourceName string) (MyDB, error) {
     db := MyDB{}
-    d,err:= sql.Open(driverName, dataSourceName)
+    d, err := sql.Open(driverName, dataSourceName)
     db.DB =d
-    return db,err
+    return db, err
 }
 
 func (my *MyDB) Close() {
@@ -25,7 +25,7 @@ func (my *MyDB) Close() {
 }
 
 func (my *MyDB) Raw(query string, args ...interface{}) RawSeter {
-    o := NewRawSet(my.DB,query,args)
+    o := NewRawSet(my.DB, query, args)
     return o
 }
 
@@ -44,11 +44,10 @@ type RawSeter interface {
     Exec() (int64, error)
     FetchRow(interface{}) error
     FetchRows(interface{}) (int64, error)
- //   SetArgs(...interface{}) RawSeter
+    //   SetArgs(...interface{}) RawSeter
 }
 
-
-func NewRawSet(db *sql.DB ,query string, args []interface{}) RawSeter {
+func NewRawSet(db *sql.DB, query string, args []interface{}) RawSeter {
     o := new(rawSet)
     o.sql = query
     o.args = args
@@ -85,12 +84,13 @@ func (r *rawSet) Exec() (int64, error) {
     }
     return result.RowsAffected()
 }
-
-func (r *rawSet) FetchRow(ptr interface{}) ( error) {
-    rows,columns,err := rows(r.db,r.sql, r.args)
+//读取一行
+//prt 为  &struct  &Item  和  &Slice
+func (r *rawSet) FetchRow(ptr interface{}) (error) {
+    rows, columns, err := rows(r.db, r.sql, r.args)
     defer rows.Close()
     columnsLen := len(columns)
-    kind,ptrRow, scan, err := scanVariables(ptr, columns, false)
+    kind, ptrRow, scan, err := scanVariables(ptr, columns, false)
     if err != nil {
         return err
     }
@@ -110,7 +110,6 @@ func (r *rawSet) FetchRow(ptr interface{}) ( error) {
                 row[columns[i]] = typeAssertion(*(scan[i].(*interface{})))
             }
             val.Set(reflect.ValueOf(row))
-
             case reflect.Slice: //slice
             row := make([]interface{}, columnsLen)
             for i := 0; i < columnsLen; i++ {
@@ -118,49 +117,46 @@ func (r *rawSet) FetchRow(ptr interface{}) ( error) {
             }
             val.Set(reflect.ValueOf(row))
         }
+        break
     }
     if err = rows.Err(); err != nil {
         return err
     }
     return nil
 }
-
+//读取多行
+//prt 为  &[]struct  &[]Item  和  &[]Slice
 func (r *rawSet) FetchRows(ptr interface{}) (int64, error) {
-    rows,columns,err := rows(r.db,r.sql, r.args)
+    rows, columns, err := rows(r.db, r.sql, r.args)
     if err != nil {
         panic(err.Error())
-        return 0,err
+        return 0, err
     }
-
     defer rows.Close()
     columnsLen := len(columns)
-
-    kind,ptrRow, scan, err := scanVariables(ptr, columns, true)
+    kind, ptrRow, scan, err := scanVariables(ptr, columns, true)
     if err != nil {
         panic(err.Error())
-        return 0,err
+        return 0, err
     }
 
-    //return data
     val := reflect.ValueOf(ptr).Elem()
     var rowNum int64
     for rows.Next() {
         if err := rows.Scan(scan...); err != nil {
             panic(err.Error())
-            return 0,err
+            return 0, err
         }
-
         switch kind {
-            case reflect.Struct: // struct
+            case reflect.Struct:
             val.Set(reflect.Append(val, reflect.ValueOf(ptrRow).Elem()))
-            case reflect.Map: // map
+            case reflect.Map:
             row := make(map[string]interface{}, columnsLen)
             for i := 0; i < columnsLen; i++ {
                 row[columns[i]] = typeAssertion(*(scan[i].(*interface{})))
             }
             val.Set(reflect.Append(val, reflect.ValueOf(row)))
-
-            case reflect.Slice: // slice
+            case reflect.Slice:
             row := make([]interface{}, columnsLen)
             for i := 0; i < columnsLen; i++ {
                 row[i] = typeAssertion(*(scan[i].(*interface{})))
@@ -169,13 +165,11 @@ func (r *rawSet) FetchRows(ptr interface{}) (int64, error) {
         }
         rowNum++
     }
-
     if err = rows.Err(); err != nil {
         panic(err.Error())
-        return 0,err
+        return 0, err
     }
-
-    return rowNum,nil
+    return rowNum, nil
 }
 
 func rows(db *sql.DB, sqlstr string, args []interface{}) (*sql.Rows, []string, error) {
@@ -184,20 +178,17 @@ func rows(db *sql.DB, sqlstr string, args []interface{}) (*sql.Rows, []string, e
         panic(err.Error())
     }
     defer stmtOut.Close()
-
     rows, err := stmtOut.Query(args...)
     if err != nil {
         panic(err.Error())
     }
-
     columns, err := rows.Columns()
     if err != nil {
         panic(err.Error())
     }
-    return rows,columns,nil
+    return rows, columns, nil
 }
 
-// Get scan variables
 func scanVariables(ptr interface{}, columns []string, isRows bool) (reflect.Kind, interface{}, []interface{}, error) {
     columnsLen := len(columns)
     typ := reflect.ValueOf(ptr).Type()
@@ -207,11 +198,10 @@ func scanVariables(ptr interface{}, columns []string, isRows bool) (reflect.Kind
     }
     elemTyp := typ.Elem()
 
-    if isRows { // Rows
+    if isRows {
         if elemTyp.Kind() != reflect.Slice {
             return 0, nil, nil, errors.New("ptr is not point a slice")
         }
-
         elemTyp = elemTyp.Elem()
     }
 
@@ -224,9 +214,9 @@ func scanVariables(ptr interface{}, columns []string, isRows bool) (reflect.Kind
             f := elemTyp.Field(i)
             if !f.Anonymous { // && f.Tag.Get("json") != ""
                 //fmt.Println(row.Elem().FieldByName(strings.Title(columns[i])).IsValid())
-                if row.Elem().FieldByName(strings.Title(columns[i])).IsValid(){
+                if row.Elem().FieldByName(strings.Title(columns[i])).IsValid() {
                     scan[i] = row.Elem().FieldByName(strings.Title(columns[i])).Addr().Interface()
-                }else{
+                }else {
                     scan[i] = &row2[i]
                 }
             }
@@ -239,10 +229,8 @@ func scanVariables(ptr interface{}, columns []string, isRows bool) (reflect.Kind
         for i := 0; i < columnsLen; i++ {
             scan[i] = &row[i]
         }
-
         return elemKind, &row, scan, nil
     }
-
     return 0, nil, nil, errors.New("ptr is not a point struct, map or slice")
 }
 
@@ -250,19 +238,14 @@ func scanVariables(ptr interface{}, columns []string, isRows bool) (reflect.Kind
 func typeAssertion(v interface{}) interface{} {
     switch v.(type) {
         case bool:
-        //log.Printf("bool\n")
         return v.(bool)
         case int64:
-        //log.Printf("int64\n")
         return v.(int64)
         case float64:
-        //log.Printf("float64\n")
         return v.(float64)
         case string:
-        //log.Printf("string\n")
         return v.(string)
         case []byte:
-        //log.Printf("[]byte\n")
         return string(v.([]byte))
         default:
         //log.Printf("Unexpected type %#v\n", v)

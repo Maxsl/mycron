@@ -14,7 +14,7 @@ import (
 )
 
 type Job struct {
-	ID              int
+	Id              int
 	Name, Time, Cmd string
 	STime, ETime    int
 	Status          uint8
@@ -79,13 +79,13 @@ func UpdateModifyList() (int64,error){
 }
 
 func (job Job) ChangeRunningStatus(status int) (int64,error) {
-    return db.Raw("update cron set running = ? where id = ?", status, job.ID).Exec()
+    return db.Raw("update cron set running = ? where id = ?", status, job.Id).Exec()
 }
 
 
 func (job Job) JobStep(step int,str string,process_id,branch int) (int64,error) {
     return db.Raw("insert into cron_hist set cId = ?,step = ?,process_id =? ,branch =? ,time = ?,ret=?",
-                    job.ID, step,process_id,branch,time.Now().Format("2006-01-02 15:04:05"),str).Insert()
+                    job.Id, step,process_id,branch,time.Now().Format("2006-01-02 15:04:05"),str).Insert()
 }
 
 func (job Job) Run(){
@@ -119,7 +119,7 @@ func (job Job) Exec(i int)  {
     var out bytes.Buffer
     cmd.Stdout = &out
     if err := cmd.Start(); err != nil {
-        Log(job.ID,cmd.Path,err.Error(),cmd.Process.Pid,i)
+        Log(job.Id,cmd.Path,err.Error(),cmd.Process.Pid,i)
         job.JobStep(3,err.Error(),cmd.Process.Pid,i)
         return
     }
@@ -135,7 +135,7 @@ func (job Job) Exec(i int)  {
     select {
     case  err :=<-done:
         if err !=nil{
-            Log(job.ID,cmd.Path,err.Error(),cmd.Process.Pid,i)
+            Log(job.Id,cmd.Path,err.Error(),cmd.Process.Pid,i)
             job.JobStep(3,err.Error(),cmd.Process.Pid,i)
             return
         }
