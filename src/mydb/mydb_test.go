@@ -10,13 +10,13 @@ type Job struct {
     STime, ETime    int
     Status          uint8
     Running         uint8
-    IsModify        uint8
+    Modify          uint8
     Process         uint8
     Ip              string
     Singleton       uint8
 }
 func TestMyDb(t *testing.T) {
-    db, err := Open("mysql", "root:@tcp(127.0.0.1:3306)/mycron?charset=utf8")
+    db, err := Open("mysql", "wida:wida@tcp(127.0.0.1:3306)/mycron?charset=utf8")
     if err != nil {
         t.Error(err.Error())
     }
@@ -46,5 +46,12 @@ func TestMyDb(t *testing.T) {
         t.Error(err.Error())
     }
     fmt.Println(data)
+
+    var sdata []Job
+    _,err = db.Raw("SELECT * FROM cron").FetchRows(&sdata)
+    if (err != nil ){
+        t.Error(err.Error())
+    }
+    fmt.Println(sdata)
 }
 

@@ -19,7 +19,7 @@ type Job struct {
 	STime, ETime    int
 	Status          uint8
 	Running         uint8
-	IsModify        uint8
+	Modify          uint8
 	Process         uint8
 	Ip              string
     Singleton       uint8
@@ -49,27 +49,12 @@ func init() {
 
 func GetCronList() (jobss []Job, e error) {
     ut := int64(time.Now().Unix())
-    var list = []mydb.Item{}
-    length,err := db.Raw("SELECT * FROM cron where status = 1 and sTime < ? and eTime > ?", ut, ut).FetchRows(&list)
+    var jobs []Job
+    _,err := db.Raw("SELECT * FROM cron where status = 1 and sTime < ? and eTime > ?", ut, ut).FetchRows(&jobs)
     if err != nil {
         panic(err.Error())
     }
-    jobs := make([]Job, length)
-    for i,val := range list {
-        //fmt.Println()
-        jobs[i].Cmd = val["cmd"]
-        jobs[i].ID = val["id"]
-        jobs[i].Name = val["name"]
-        jobs[i].STime = val["sTime"]
-        jobs[i].ETime = val["eTime"]
-        jobs[i].Status = val["status"]
-        jobs[i].Running = val["isrunning"]
-        jobs[i].IsModify = val["modify"]
-        jobs[i].Singleton = val["singleton"]
-        jobs[i].Ip = val["ip"]
-        jobs[i].IsModify = val["modify"]
-        jobs[i].Time = val["time"]
-    }
+
     return jobs,nil
 }
 
@@ -79,44 +64,28 @@ func GetModifyList()(jobss []Job, e error){
             Log(err);
         }
     }()
-
     ut := int64(time.Now().Unix())
-    var list = []mydb.Item{}
-    length,err := db.Raw("SELECT * FROM cron where sTime < ? and eTime > ? and modify = 1", ut, ut).FetchRows(&list)
+    var jobs []Job
+    _,err := db.Raw("SELECT * FROM cron where sTime < ? and eTime > ? and modify = 1", ut, ut).FetchRows(&jobs)
     if err != nil {
         panic(err.Error())
-    }
-    jobs := make([]Job, length)
-    for i,val := range *list {
-        //fmt.Println()
-        jobs[i].Cmd = string(val["cmd"])
-        jobs[i].ID = val["id"]
-        jobs[i].Name = val["name"]
-        jobs[i].STime = val["sTime"]
-        jobs[i].ETime = val["eTime"]
-        jobs[i].Status = val["status"]
-        jobs[i].Running = val["isrunning"]
-        jobs[i].IsModify = val["modify"]
-        jobs[i].Singleton = val["singleton"]
-        jobs[i].Ip = val["ip"]
-        jobs[i].IsModify = val["modify"]
-        jobs[i].Time = val["time"]
     }
     return jobs,nil
 }
 
-func UpdateModifyList() int64{
+func UpdateModifyList() (int64,error){
     ut := int64(time.Now().Unix())
     return db.Raw("update cron set modify = 0 where sTime < ? and eTime > ? ", ut, ut).Exec()
 }
 
-func (job Job) ChangeRunningStatus(status int) int64 {
-    return db.Raw("update cron set isrunning = ? where id = ?", status, job.ID).Exec()
+func (job Job) ChangeRunningStatus(status int) (int64,error) {
+    return db.Raw("update cron set running = ? where id = ?", status, job.ID).Exec()
 }
 
 
-func (job Job) JobStep(step int,str string,process_id,branch int) int64 {
-    return db.Raw(job.ID, step,process_id,branch,time.Now().Format("2006-01-02 15:04:05"),str).Exec()
+func (job Job) JobStep(step int,str string,process_id,branch int) (int64,error) {
+    return db.Raw("insert into cron_hist set cId = ?,step = ?,process_id =? ,branch =? ,time = ?,ret=?",
+                    job.ID, step,process_id,branch,time.Now().Format("2006-01-02 15:04:05"),str).Insert()
 }
 
 func (job Job) Run(){

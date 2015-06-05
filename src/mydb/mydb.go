@@ -6,7 +6,7 @@ import (
     "reflect"
     "errors"
     "strings"
-    "fmt"
+  //  "fmt"
 )
 
 type MyDB struct {
@@ -205,8 +205,6 @@ func scanVariables(ptr interface{}, columns []string, isRows bool) (reflect.Kind
     if typ.Kind() != reflect.Ptr {
         return 0, nil, nil, errors.New("ptr is not a pointer")
     }
-
-    //log.Printf("%s\n", dataType.Elem().Kind())
     elemTyp := typ.Elem()
 
     if isRows { // Rows
@@ -218,31 +216,19 @@ func scanVariables(ptr interface{}, columns []string, isRows bool) (reflect.Kind
     }
 
     elemKind := elemTyp.Kind()
-
-    // element(value) is point to row
     scan := make([]interface{}, columnsLen)
-
-    //log.Printf("%s\n", elemKind)
-
     if elemKind == reflect.Struct {
-/*
-        if columnsLen != elemTyp.NumField() {
-            return 0, nil, nil, errors.New("columnsLen is not equal elemTyp.NumField()")
-        }
-*/
         row2 := make([]interface{}, columnsLen)
         row := reflect.New(elemTyp) // Data
         for i := 0; i < columnsLen; i++ {
             f := elemTyp.Field(i)
             if !f.Anonymous { // && f.Tag.Get("json") != ""
-                fmt.Println(columns[i] ,elemTyp.Field(i).Name)
-                if columns[i] == strings.ToLower(elemTyp.Field(i).Name){
-                    fmt.Println(elemTyp.Field(i).Name)
-                    scan[i] = row.Elem().FieldByIndex([]int{i}).Addr().Interface()
+                //fmt.Println(row.Elem().FieldByName(strings.Title(columns[i])).IsValid())
+                if row.Elem().FieldByName(strings.Title(columns[i])).IsValid(){
+                    scan[i] = row.Elem().FieldByName(strings.Title(columns[i])).Addr().Interface()
                 }else{
                     scan[i] = &row2[i]
                 }
-               // scan[i] = row.Elem().FieldByIndex([]int{i}).Addr().Interface()
             }
         }
         return elemKind, row.Interface(), scan, nil
