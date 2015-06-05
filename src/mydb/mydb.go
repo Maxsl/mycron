@@ -5,6 +5,8 @@ import (
     _ "github.com/go-sql-driver/mysql"
     "reflect"
     "errors"
+    "strings"
+    "fmt"
 )
 
 type MyDB struct {
@@ -88,7 +90,7 @@ func (r *rawSet) FetchRow(ptr interface{}) ( error) {
     rows,columns,err := rows(r.db,r.sql, r.args)
     defer rows.Close()
     columnsLen := len(columns)
-    kind, scan, err := scanVariables(ptr, columnsLen, false)
+    kind,ptrRow, scan, err := scanVariables(ptr, columns, false)
     if err != nil {
         return err
     }
@@ -101,8 +103,7 @@ func (r *rawSet) FetchRow(ptr interface{}) ( error) {
         }
         switch kind {
             case reflect.Struct: // struct
-            //val.Set(reflect.ValueOf(ptrRow).Elem())
-
+            val.Set(reflect.ValueOf(ptrRow).Elem())
             case reflect.Map: //map
             row := make(map[string]interface{}, columnsLen)
             for i := 0; i < columnsLen; i++ {
@@ -134,7 +135,7 @@ func (r *rawSet) FetchRows(ptr interface{}) (int64, error) {
     defer rows.Close()
     columnsLen := len(columns)
 
-    kind, scan, err := scanVariables(ptr, columnsLen, true)
+    kind,ptrRow, scan, err := scanVariables(ptr, columns, true)
     if err != nil {
         panic(err.Error())
         return 0,err
@@ -150,6 +151,8 @@ func (r *rawSet) FetchRows(ptr interface{}) (int64, error) {
         }
 
         switch kind {
+            case reflect.Struct: // struct
+            val.Set(reflect.Append(val, reflect.ValueOf(ptrRow).Elem()))
             case reflect.Map: // map
             row := make(map[string]interface{}, columnsLen)
             for i := 0; i < columnsLen; i++ {
@@ -195,17 +198,20 @@ func rows(db *sql.DB, sqlstr string, args []interface{}) (*sql.Rows, []string, e
 }
 
 // Get scan variables
-func scanVariables(ptr interface{}, columnsLen int, isRows bool) (reflect.Kind, []interface{}, error) {
+func scanVariables(ptr interface{}, columns []string, isRows bool) (reflect.Kind, interface{}, []interface{}, error) {
+    columnsLen := len(columns)
     typ := reflect.ValueOf(ptr).Type()
 
     if typ.Kind() != reflect.Ptr {
-        return 0, nil, errors.New("ptr is not a pointer")
+        return 0, nil, nil, errors.New("ptr is not a pointer")
     }
+
+    //log.Printf("%s\n", dataType.Elem().Kind())
     elemTyp := typ.Elem()
 
     if isRows { // Rows
         if elemTyp.Kind() != reflect.Slice {
-            return 0, nil, errors.New("ptr is not point a slice")
+            return 0, nil, nil, errors.New("ptr is not point a slice")
         }
 
         elemTyp = elemTyp.Elem()
@@ -216,16 +222,42 @@ func scanVariables(ptr interface{}, columnsLen int, isRows bool) (reflect.Kind, 
     // element(value) is point to row
     scan := make([]interface{}, columnsLen)
 
-    if elemKind == reflect.Map || elemKind == reflect.Slice || elemKind == reflect.Struct {
+    //log.Printf("%s\n", elemKind)
+
+    if elemKind == reflect.Struct {
+/*
+        if columnsLen != elemTyp.NumField() {
+            return 0, nil, nil, errors.New("columnsLen is not equal elemTyp.NumField()")
+        }
+*/
+        row2 := make([]interface{}, columnsLen)
+        row := reflect.New(elemTyp) // Data
+        for i := 0; i < columnsLen; i++ {
+            f := elemTyp.Field(i)
+            if !f.Anonymous { // && f.Tag.Get("json") != ""
+                fmt.Println(columns[i] ,elemTyp.Field(i).Name)
+                if columns[i] == strings.ToLower(elemTyp.Field(i).Name){
+                    fmt.Println(elemTyp.Field(i).Name)
+                    scan[i] = row.Elem().FieldByIndex([]int{i}).Addr().Interface()
+                }else{
+                    scan[i] = &row2[i]
+                }
+               // scan[i] = row.Elem().FieldByIndex([]int{i}).Addr().Interface()
+            }
+        }
+        return elemKind, row.Interface(), scan, nil
+    }
+
+    if elemKind == reflect.Map || elemKind == reflect.Slice {
         row := make([]interface{}, columnsLen) // Data
         for i := 0; i < columnsLen; i++ {
             scan[i] = &row[i]
         }
 
-        return elemKind, scan, nil
+        return elemKind, &row, scan, nil
     }
 
-    return 0, nil, errors.New("ptr is not a point struct, map or slice")
+    return 0, nil, nil, errors.New("ptr is not a point struct, map or slice")
 }
 
 // Type assertions
