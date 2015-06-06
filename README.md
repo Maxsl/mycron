@@ -1,17 +1,23 @@
 
-#**golang  任务调度系统**
+#golang  任务调度系统
 
-1. 从mysql读取cron配置,开始任务和结束任务完全配置话
+##主要特性
+- 从mysql读取cron配置,系统坚持job添加和修改后自主更新，开始任务和结束任务完全配置话
 
-2. 采用crontab表达式支持到秒级
+- 采用crontab表达式支持到秒级
 
-3. 任务运行状态全部透明化
+- 任务运行状态全部透明化
 
-4. 支持*nux 和 windows  脚本入口命令分别是 shell -c  和  cmd /c 
+- 支持立即执行调试job
+
+- 支持一个job同时多个进程跑，和支持各个进程状态监控
+
+- 支持*nux 和 windows  脚本入口命令分别是 shell -c  和  cmd /c
 
 ##Tables
 
 ###任务配置
+
      CREATE TABLE `cron` (
       `id` int(11) NOT NULL AUTO_INCREMENT,
       `uid` int(11) NOT NULL COMMENT '用户id',
