@@ -84,7 +84,7 @@ func (job Job) ChangeRunningStatus(status int) (int64,error) {
 
 
 func (job Job) JobStep(step int,str string,process_id,branch int) (int64,error) {
-    return db.Raw("insert into cron_hist set cId = ?,step = ?,process_id =? ,branch =? ,time = ?,ret=?",
+    return db.Raw("insert into cron_hist set cid = ?,step = ?,process_id =? ,branch =? ,time = ?,ret=?",
                     job.Id, step,process_id,branch,time.Now().Format("2006-01-02 15:04:05"),str).Insert()
 }
 

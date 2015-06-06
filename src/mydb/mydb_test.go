@@ -2,6 +2,7 @@ package mydb
 
 import (
     "testing"
+    "fmt"
 )
 type Job struct {
     Id              int
@@ -13,6 +14,11 @@ type Job struct {
     Process         uint8
     Ip              string
     Singleton       uint8
+}
+
+func (job Job) String() {
+    return fmt.Sprintf("id:%d name:%s time:%s cmd:%s stime:%d etime:%d status:%d running:%d modify:%d process:%d ip:%s singleton:%d",
+    job.Id,job.Name,job.Time,job.Cmd,job.STime,job.ETime,job.Status,job.Running,job.Modify,job.Process,job.Ip,job.Singleton)
 }
 
 func TestFetchRow(t *testing.T) {

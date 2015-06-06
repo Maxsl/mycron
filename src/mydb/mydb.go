@@ -6,7 +6,6 @@ import (
     "reflect"
     "errors"
     "strings"
-//  "fmt"
 )
 
 type MyDB struct {
@@ -208,17 +207,23 @@ func scanVariables(ptr interface{}, columns []string, isRows bool) (reflect.Kind
     elemKind := elemTyp.Kind()
     scan := make([]interface{}, columnsLen)
     if elemKind == reflect.Struct {
-        row2 := make([]interface{}, columnsLen)
         row := reflect.New(elemTyp) // Data
+        columns2fieldMp := make(map[string]string, row.Elem().Type().NumField())
+        columnNameMap := make(map[string]string,columnsLen)
+        for _,v :=range columns{
+            columnNameMap[strings.ToLower(v)] = v
+        }
+        for  j:= 0 ; j< elemTyp.NumField(); j++{
+            s :=  elemTyp.Field(j).Name
+            if v,found := columnNameMap[strings.ToLower(s)] ;found {
+                columns2fieldMp[v] = s
+            }
+        }
         for i := 0; i < columnsLen; i++ {
-            f := elemTyp.Field(i)
-            if !f.Anonymous { // && f.Tag.Get("json") != ""
-                //fmt.Println(row.Elem().FieldByName(strings.Title(columns[i])).IsValid())
-                if row.Elem().FieldByName(strings.Title(columns[i])).IsValid() {
-                    scan[i] = row.Elem().FieldByName(strings.Title(columns[i])).Addr().Interface()
-                }else {
-                    scan[i] = &row2[i]
-                }
+            if row.Elem().FieldByName(columns2fieldMp[columns[i]]).IsValid() {
+                scan[i] = row.Elem().FieldByName(columns2fieldMp[columns[i]]).Addr().Interface()
+            }else {
+                scan[i] = new(interface{})
             }
         }
         return elemKind, row.Interface(), scan, nil
@@ -234,7 +239,6 @@ func scanVariables(ptr interface{}, columns []string, isRows bool) (reflect.Kind
     return 0, nil, nil, errors.New("ptr is not a point struct, map or slice")
 }
 
-// Type assertions
 func typeAssertion(v interface{}) interface{} {
     switch v.(type) {
         case bool:
@@ -248,7 +252,6 @@ func typeAssertion(v interface{}) interface{} {
         case []byte:
         return string(v.([]byte))
         default:
-        //log.Printf("Unexpected type %#v\n", v)
         return ""
     }
 }
