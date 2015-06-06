@@ -72,10 +72,27 @@ func GetModifyList()(jobss []Job, e error){
     }
     return jobs,nil
 }
-
 func UpdateModifyList() (int64,error){
     ut := int64(time.Now().Unix())
     return db.Raw("update cron set modify = 0 where sTime < ? and eTime > ? ", ut, ut).Exec()
+}
+
+func AtOnce()(jobss []Job, e error){
+    defer func() {
+        if err := recover(); err != nil {
+            Log(err);
+        }
+    }()
+    var jobs []Job
+    _,err := db.Raw("SELECT * FROM cron where atonce = 1").FetchRows(&jobs)
+    if err != nil {
+        panic(err.Error())
+    }
+    return jobs,nil
+}
+
+func UpdateAtOnceList() (int64,error){
+    return db.Raw("update cron set atonce = 0").Exec()
 }
 
 func (job Job) ChangeRunningStatus(status int) (int64,error) {

@@ -23,13 +23,16 @@ func main() {
     }
     //start
     c.Start()
-    //监听更新事件
+
+    //@开启 "立即执行" 监听
+    go atonce()
+
     for {
+        //监听更新事件
         select {
             case <-time.After(time.Second):
                 jobs, _ := mycron.GetModifyList()
-                for i := 0; i < len(jobs); i++ {
-                    job := jobs[i]
+                for _,job:= range jobs{
                     c.AddFunc(job.Time,
                     func() {jobrun(job)},
                     int(job.Status), int(job.Id), int64(job.STime), int64(job.ETime))
@@ -39,7 +42,7 @@ func main() {
         }
     }
 }
-
+//cron执行
 func jobrun(job mycron.Job)  {
     defer func() {
         if err := recover(); err != nil {
@@ -53,4 +56,20 @@ func jobrun(job mycron.Job)  {
     processSet.Add(job.Id)
     job.Run()
     processSet.Remove(job.Id)
+}
+
+//立即执行事件处理
+func atonce() {
+    for {
+        //监听更新事件
+        select {
+        case <-time.After(time.Second):
+            jobs, _ := mycron.AtOnce()
+            for _, job := range jobs {
+                job.Run()
+                mycron.UpdateAtOnceList()
+                continue
+            }
+        }
+    }
 }
