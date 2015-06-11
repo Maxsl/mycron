@@ -5,7 +5,7 @@ import (
 )
 
 const (
-    ConfigPath = "../etc/mycron.conf"
+    ConfigPath = "./etc/mycron.conf"
 )
 
 var(
