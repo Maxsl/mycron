@@ -1,6 +1,8 @@
 
 #golang  任务调度系统
 
+管理后台[http://git.oschina.net/wida/mycronadmin](http://git.oschina.net/wida/mycronadmin)
+
 ##主要特性
 - 从mysql读取cron配置,系统坚持job添加和修改后自主更新，开始任务和结束任务完全配置话
 
