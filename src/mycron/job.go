@@ -51,7 +51,7 @@ func init() {
 func GetCronList() (jobss []Job, e error) {
     ut := int64(time.Now().Unix())
     var jobs []Job
-    _,err := db.Raw("SELECT * FROM cron where status = 1 and sTime < ? and eTime > ?", ut, ut).FetchRows(&jobs)
+    _,err := db.Raw("SELECT * FROM cron where status = 1 and sTime < ? and eTime > ? and after <> 1", ut, ut).FetchRows(&jobs)
     if err != nil {
         panic(err.Error())
     }
@@ -67,7 +67,7 @@ func GetModifyList()(jobss []Job, e error){
     }()
     ut := int64(time.Now().Unix())
     var jobs []Job
-    _,err := db.Raw("SELECT * FROM cron where sTime < ? and eTime > ? and modify = 1", ut, ut).FetchRows(&jobs)
+    _,err := db.Raw("SELECT * FROM cron where sTime < ? and eTime > ? and modify = 1 and after <> 1", ut, ut).FetchRows(&jobs)
     if err != nil {
         panic(err.Error())
     }
@@ -131,16 +131,10 @@ func (job Job) Run(){
     }
     job.ChangeRunningStatus(0)
     //执行需要载该任务执行后马上执行的job
-    if job.After > 0{
-        ajob , err := job.GetAfterJob();
-        fmt.Println(ajob)
-        if err != nil{
-            Log(err);
-        }else{
-           go ajob.Run()
-        }
+    ajob , err := job.GetAfterJob();
+    if err == nil{
+        go ajob.Run()
     }
-
 }
 
 func (job Job) Exec(i int) error  {

@@ -95,7 +95,7 @@ func (r *rawSet) FetchRow(ptr interface{}) (error) {
     }
     val := reflect.ValueOf(ptr).Elem()
     defer rows.Close()
-    for rows.Next() {
+    if rows.Next() {
         err = rows.Scan(scan...)
         if err != nil {
             return err
@@ -116,7 +116,8 @@ func (r *rawSet) FetchRow(ptr interface{}) (error) {
             }
             val.Set(reflect.ValueOf(row))
         }
-        break
+    }else{
+        return errors.New("not rows found")
     }
     if err = rows.Err(); err != nil {
         return err

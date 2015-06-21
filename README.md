@@ -23,7 +23,7 @@
 
 ###任务配置
 
-     CREATE TABLE `cron` (
+    CREATE TABLE `cron` (
       `id` int(11) NOT NULL AUTO_INCREMENT,
       `uid` int(11) NOT NULL COMMENT '用户id',
       `name` varchar(50) NOT NULL DEFAULT '',
@@ -38,7 +38,7 @@
       `ip` varchar(20) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',
       `singleton` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否单例执行0非单例，1单例',
       `atonce` tinyint(1) NOT NULL DEFAULT '0' COMMENT '马上执行',
-      `atfer` int(11) NOT NULL DEFAULT '0' COMMENT '在其它任务执行完之后马上执行',
+      `after` int(11) NOT NULL DEFAULT '0' COMMENT '在其它任务执行完之后马上执行',
       PRIMARY KEY (`id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8
 
