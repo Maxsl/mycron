@@ -4,6 +4,7 @@
 管理后台[http://git.oschina.net/wida/mycronadmin](http://git.oschina.net/wida/mycronadmin)
 
 ##主要特性
+
 - 从mysql读取cron配置,系统坚持job添加和修改后自主更新，开始任务和结束任务完全配置话
 
 - 采用crontab表达式支持到秒级
@@ -14,13 +15,15 @@
 
 - 支持一个job同时多个进程跑，和支持各个进程状态监控
 
+- 支持配置一个任务在另一个任务执行完之后立即执行
+
 - 支持*nux 和 windows  脚本入口命令分别是 shell -c  和  cmd /c
 
 ##Tables
 
 ###任务配置
 
-    CREATE TABLE `cron` (
+     CREATE TABLE `cron` (
       `id` int(11) NOT NULL AUTO_INCREMENT,
       `uid` int(11) NOT NULL COMMENT '用户id',
       `name` varchar(50) NOT NULL DEFAULT '',
@@ -35,8 +38,9 @@
       `ip` varchar(20) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL DEFAULT '',
       `singleton` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否单例执行0非单例，1单例',
       `atonce` tinyint(1) NOT NULL DEFAULT '0' COMMENT '马上执行',
+      `atfer` int(11) NOT NULL DEFAULT '0' COMMENT '在其它任务执行完之后马上执行',
       PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8
 
 
 ###任务执行记录
@@ -55,9 +59,10 @@
 ##示例for windows:
 
 ###测试配置
-    INSERT INTO `cron` VALUES (1, 'test', '*/1 * * * * ?', 'php e:\\php.php', 1427337701, 1437337701, 1, 0, 0, 1, '', 0);
-    INSERT INTO `cron` VALUES (2, 'test2', '*/2 * * * * ?', 'php e:\\test.php', 1427337701, 1447337701, 1, 0, 0, 1, '', 0);
-    
+    INSERT INTO `cron` VALUES (1, 'test', '*/1 * * * * ?', 'php e:\\php.php', 1427337701, 1437337701, 1, 0, 0, 1, '', 0,0);
+    INSERT INTO `cron` VALUES (2, 'test2', '*/2 * * * * ?', 'php e:\\test.php', 1427337701, 1447337701, 1, 0, 0, 1, '', 0,0);
+    INSERT INTO `cron` VALUES (3, 'test3', '', 'php e:\\test.php', 1427337701, 1447337701, 1, 0, 0, 1, '', 0,1);
+
 ###文件 e:\php.php
     <?php
         echo "每秒执行";	 
@@ -72,6 +77,7 @@
 ###测试配置
     INSERT INTO `cron` VALUES (1, 'test', '*/1 * * * * ?', '/home/wida/sh.sh', 1427337701, 1437337701, 1, 0, 0, 1, '', 0);
     INSERT INTO `cron` VALUES (2, 'test2', '*/2 * * * * ?', '/home/wida/sh2.sh', 1427337701, 1447337701, 1, 0, 0, 1, '', 0);
+    INSERT INTO `cron` VALUES (3, 'test3', '', 'echo 1111', 1427337701, 1447337701, 1, 0, 0, 1, '', 0,1);
 
 ###文件 /home/wida/sh.sh
 

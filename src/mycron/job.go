@@ -23,6 +23,7 @@ type Job struct {
 	Process         uint8
 	Ip              string
     Singleton       uint8
+    After           int
 }
 
 type RunRet struct {
@@ -105,6 +106,13 @@ func (job Job) JobStep(step int,str string,process_id,branch int) (int64,error) 
                     job.Id, step,process_id,branch,time.Now().Format("2006-01-02 15:04:05"),str).Insert()
 }
 
+
+func (job Job) GetAfterJob() (Job,error) {
+    var j Job;
+    err := db.Raw("SELECT * FROM cron where after = ? and status = 1",job.Id).FetchRow(&j)
+    return j,err
+}
+
 func (job Job) Run(){
     job.ChangeRunningStatus(1)
     job.JobStep(0,"start",0,0)
@@ -122,9 +130,20 @@ func (job Job) Run(){
         job.Exec(0)
     }
     job.ChangeRunningStatus(0)
+    //执行需要载该任务执行后马上执行的job
+    if job.After > 0{
+        ajob , err := job.GetAfterJob();
+        fmt.Println(ajob)
+        if err != nil{
+            Log(err);
+        }else{
+           go ajob.Run()
+        }
+    }
+
 }
 
-func (job Job) Exec(i int)  {
+func (job Job) Exec(i int) error  {
     var cmd * exec.Cmd
     if runtime.GOOS == "windows"{
         cmd = exec.Command("cmd", "/C", job.Cmd)
@@ -138,7 +157,7 @@ func (job Job) Exec(i int)  {
     if err := cmd.Start(); err != nil {
         Log(job.Id,cmd.Path,err.Error(),cmd.Process.Pid,i)
         job.JobStep(3,err.Error(),cmd.Process.Pid,i)
-        return
+        return err
     }
     start := "start"
     if i >0 {
@@ -154,9 +173,10 @@ func (job Job) Exec(i int)  {
         if err !=nil{
             Log(job.Id,cmd.Path,err.Error(),cmd.Process.Pid,i)
             job.JobStep(3,err.Error(),cmd.Process.Pid,i)
-            return
+            return err
         }
     }
     fmt.Println(strings.TrimSpace(out.String()))
     job.JobStep(1,strings.TrimSpace(out.String()),cmd.Process.Pid,i)
+    return nil
 }
