@@ -116,7 +116,7 @@ func (r *rawSet) FetchRow(ptr interface{}) (error) {
             }
             val.Set(reflect.ValueOf(row))
         }
-    }else{
+    }else{ //没有数据抛出错误
         return errors.New("not rows found")
     }
     if err = rows.Err(); err != nil {
