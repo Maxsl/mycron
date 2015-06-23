@@ -39,7 +39,7 @@ func main() {
     //start
     c.Start()
 
-    //@开启 "立即执行" 监听
+    //开启 "立即执行" 监听
     go atonce()
 
     for {
