@@ -21,6 +21,7 @@ func (job Job) String() {
     job.Id,job.Name,job.Time,job.Cmd,job.STime,job.ETime,job.Status,job.Running,job.Modify,job.Process,job.Ip,job.Singleton)
 }
 
+
 func TestFetchRow(t *testing.T) {
     db, _ := Open("mysql", "wida:wida@tcp(127.0.0.1:3306)/mycron?charset=utf8")
     db.DB.SetMaxOpenConns(30)
