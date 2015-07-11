@@ -1,7 +1,7 @@
 package mycron
 
 import (
-    "git.oschina.net/wida/goUdpLog/src/conf"
+    "github.com/widaT/conf"
 )
 
 const (
