@@ -10,7 +10,7 @@ import (
     "strings"
     "bytes"
     "sync"
-    "git.oschina.net/wida/mycron/src/mydb"
+    "github.com/widaT/mycron/src/mydb"
 )
 
 type Job struct {

@@ -1,7 +1,7 @@
 
 #golang  任务调度系统
 
-管理后台[mycronadmin](http://git.oschina.net/wida/mycronadmin)
+管理后台[mycronadmin](http://github.com/widaT/mycronadmin)
 
 ##主要特性
 

@@ -15,8 +15,8 @@
 package main
 
 import (
-    "git.oschina.net/wida/mycron/src/cron"
-    "git.oschina.net/wida/mycron/src/mycron"
+    "github.com/widaT/mycron/src/cron"
+    "github.com/widaT/mycron/src/mycron"
     "time"
 )
 var(
