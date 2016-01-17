@@ -7,7 +7,7 @@ import (
 
 func TestConstantDelayNext(t *testing.T) {
 	tests := []struct {
-		time     string
+		stime     string
 		delay    time.Duration
 		expected string
 	}{
@@ -45,10 +45,10 @@ func TestConstantDelayNext(t *testing.T) {
 	}
 
 	for _, c := range tests {
-		actual := Every(c.delay).Next(getTime(c.time))
+		actual := Every(c.delay).Next(getTime(c.stime))
 		expected := getTime(c.expected)
 		if actual != expected {
-			t.Errorf("%s, \"%s\": (expected) %v != %v (actual)", c.time, c.delay, expected, actual)
+			t.Errorf("%s, \"%s\": (expected) %v != %v (actual)", c.stime, c.delay, expected, actual)
 		}
 	}
 }
